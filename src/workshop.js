@@ -1,6 +1,8 @@
 (function(){
   'use strict';
-  // ★ 星海工坊 V1.9：新增装束 / 能力 / 物品作品与 MVU 安装；顶部分类横向滑动；NPC 显示栏目改为生灵。
+  // ★ 星海工坊 V2.0 dev.23：简介恢复为全栏目可选字段，留空自动补齐；新增酒馆世界书导入映射、导入作品云端发布入口与作品编辑入口。
+  // ★ dev.22：发布页去冗余；生灵/NPC 改为完整结构化角色表单；装束/能力/物品自动生成作品摘要。
+  // ★ V1.9：新增装束 / 能力 / 物品作品与 MVU 安装；顶部分类横向滑动；NPC 显示栏目改为生灵。
   // ★ V1.8：作品数据协议层——增加标准作品包（XYWS Package v1）导入/导出，先用本地文件完整验证 A 端发布 → B 端读取 → 按类型安装；移除把星灵当 NPC 的示例。
   // ★ V1.7：人物/NPC统一双通道——可加入开场白人物名册作为开局预设，也可中途直写 MVU 重要人物；原“角色”作品不再误送主角命名档案库。
   var DEMO_WORKS = [{"id":"play_star","type":"玩法","icon":"🎮","title":"明星养成","desc":"一边经营演艺事业，一边隐藏魔法少女身份。试镜、综艺、粉丝与秘密战斗会同时来到你的生活。","tags":["娱乐圈","日常","经营","身份暴露"],"likes":3281,"uses":8924,"body":"在魔法少女生活之外体验演艺事业。\\n\\n你可以参加试镜、拍戏、综艺与代言，同时经营粉丝、舆论和业内关系。\\n\\n魔法少女身份依然需要保密。突发战斗可能与工作撞期，战斗痕迹、偷拍视频与熟人的怀疑，都可能让秘密逐渐失控。\\n\\n节奏要求：慢慢成长，不要突然成为顶级明星。"},{"id":"play_school","type":"玩法","icon":"🎮","title":"校园社团生活","desc":"加入社团、参加文化祭、处理学生会事务，把魔法少女生活藏在普通校园日常之下。","tags":["校园","日常","社团"],"likes":1850,"uses":5100,"body":"让世界增加更浓的校园生活。社团、文化祭、学生会、同学关系都可以成为日常剧情的一部分。"},{"id":"role_mashiro","type":"角色","icon":"👤","title":"朝雾真白","desc":"温柔可靠的高年级魔法少女，擅长治疗与结界，但似乎一直在隐瞒某次任务的真相。","tags":["学姐","治愈系","秘密"],"likes":2380,"uses":6340,"body":"温柔可靠的高年级魔法少女，擅长治疗和结界。她似乎一直在回避谈论某一次过去的任务。"},{"id":"role_suzu","type":"角色","icon":"👤","title":"白石铃","desc":"17岁，银灰短发。表面冷淡，实际很容易因为别人的温柔而动摇。能力为重力偏转。","tags":["高中生","新人","重力系"],"likes":1774,"uses":4210,"body":"17岁高中生，银灰色短发，性格表面冷淡。能力为重力偏转。可作为人物/NPC加入开局，也可以在剧情中途加入当前世界。"},{"id":"opening_rain","type":"开局","icon":"🎬","title":"暴雨夜的第一次变身","desc":"停电、暴雨、空无一人的车站，以及第一次听见来自星灵的呼唤。","tags":["新人","都市","第一次变身"],"likes":1430,"uses":3509,"body":"暴雨让整座城市陷入短暂混乱。停电的车站里，你第一次听见星灵呼唤自己的名字。"},{"id":"opening_stair","type":"开局","icon":"🎬","title":"转校第一天，不存在的楼梯","desc":"放学后的教学楼里，多出了一段白天从未出现过的楼梯。此时的你还没有成为魔法少女。","tags":["校园","悬疑","新人"],"likes":672,"uses":1201,"body":"今天是你转入新学校的第一天。\\n\\n放学后，教学楼里出现了一段白天从未存在过的楼梯。你还没有成为魔法少女。"},{"id":"npc_reporter","type":"NPC","icon":"✧","title":"追查魔法少女的记者","desc":"AI 会根据当前世界生成一名执着调查超自然事件的记者。","tags":["模板NPC","调查","身份危机"],"likes":914,"uses":2803,"body":"这不是固定姓名的角色，而是一份 NPC 生成模板。AI 根据当前世界生成一名调查超自然事件的记者。TA 并非纯粹的敌人，而是相信公众有知道真相的权利。"},{"id":"rule_secret","type":"规则","icon":"📜","title":"魔法严格保密","desc":"普通社会不知道魔法少女与魔物真实存在。身份暴露会带来舆论、调查与现实后果。","tags":["保密","现实感"],"likes":2019,"uses":6441,"body":"普通社会并不知道魔法少女与魔物真实存在。不要让普通 NPC 无缘无故知道魔法。身份暴露应带来合理的舆论、调查与关系后果。"},{"id":"rule_injury","type":"规则","icon":"📜","title":"伤势不会一夜消失","desc":"战斗造成的明显伤势需要合理恢复时间，不允许下一幕无解释完全痊愈。","tags":["战斗","现实感","恢复"],"likes":1180,"uses":3001,"body":"战斗造成的明显伤势需要合理恢复时间。除非有明确治疗手段，否则不要在下一幕无解释完全痊愈。"}];
@@ -93,7 +95,7 @@
       var a=xywsReconcilePlayFlags(xywsPlayLoad());xywsPlaySaveLocal(a);return true;
     }
 
-    var overlay=null, currentScreen='home', prevScreen='home', currentCat='热门', currentWork=null, pubType='角色档案', toastTimer=null, xywsCloudWarned=false, xywsProbeOk=false, xywsOldHtmlOverflow='', xywsOldBodyOverflow='', xywsManageWorks=[], xywsManageLoaded=false, xywsManageLoading=false, xywsManageIsAdmin=false, xywsAutoSyncTimer=null, xywsAutoSyncBusy=false;
+    var overlay=null, currentScreen='home', prevScreen='home', currentCat='热门', currentWork=null, pubType='角色', toastTimer=null, xywsCloudWarned=false, xywsProbeOk=false, xywsOldHtmlOverflow='', xywsOldBodyOverflow='', xywsManageWorks=[], xywsManageLoaded=false, xywsManageLoading=false, xywsManageIsAdmin=false, xywsAutoSyncTimer=null, xywsAutoSyncBusy=false, xywsPendingImport=null, xywsPublishMode='create', xywsEditingWork=null;
     var XYWS_AUTO_SYNC_MS=30000;
 
     var XYWS_SIZE_KEY='xyws_desktop_size_v1';
@@ -134,7 +136,7 @@
           '<section class="xyws-screen on" data-screen="home"><div class="xyws-hero"><small data-home-kicker>✦ 星图外的另一片夜空</small><h3 data-home-title>社区热门</h3><p data-home-desc>热门页按分类展示点赞较高的作品；需要更多时再进入对应分类。</p></div><div class="xyws-search">⌕<input data-q placeholder="搜索人物、生灵、开局、规则、玩法、装束、能力、物品…"></div><div class="xyws-cats" data-cats></div><div data-hot></div><div data-list style="display:none"></div></section>'+
           '<section class="xyws-screen" data-screen="favorite"><div class="xyws-hero"><small>♡ 我的星标</small><h3>收藏</h3><p>收藏只是留着以后再看，不等于已经加入本局。</p></div><div data-favs></div></section>'+
           '<section class="xyws-screen" data-screen="create"><div class="xyws-hero"><small>✦ 发布到星海</small><h3>你想分享什么？</h3><p>选择要发布的类型。</p></div><div class="xyws-creategrid">'+
-            '<button class="xyws-create" data-pub="角色档案"><i>👤</i><b>人物角色</b></button>'+
+            '<button class="xyws-create" data-pub="角色"><i>👤</i><b>人物角色</b></button>'+
             '<button class="xyws-create" data-pub="开局"><i>🎬</i><b>开局</b></button>'+
             '<button class="xyws-create" data-pub="NPC"><i>✧</i><b>生灵</b><span>魔物 · 星灵 · 使魔 · 灵兽等</span></button>'+
             '<button class="xyws-create" data-pub="装束"><i>✦</i><b>变身装束</b><span>变身后的服装、装甲、武装外观</span></button>'+
@@ -144,8 +146,9 @@
             '<button class="xyws-create" data-pub="玩法"><i>🎮</i><b>玩法</b></button>'+
           '</div></section>'+
           '<section class="xyws-screen" data-screen="mine"><div class="xyws-hero"><small>✧ 我的星图</small><h3>我的</h3><p>这里保留一次性导入记录、我的作品与本地导入作品；作品包可用于跨浏览器/跨设备测试分享。</p></div><div data-mine></div></section>'+
-          '<section class="xyws-screen" data-screen="detail"><div class="xyws-pill" data-dtype></div><div class="xyws-detailtitle" data-dtitle></div><div class="xyws-detailmeta" data-dmeta></div><div class="xyws-panel"><div class="xyws-detailbody" data-dbody></div></div><div class="xyws-person-install" data-person-install hidden><button class="xyws-primary" data-a="install-opening">＋ 加入开局名册</button><button class="xyws-primary" data-a="install-now">＋ 中途加入本局</button></div><button class="xyws-primary" data-a="install" data-single-install>＋ 加入本局</button><div class="xyws-actions"><button class="xyws-secondary" data-a="like">♡ 点赞</button><button class="xyws-secondary" data-a="fav">☆ 收藏</button><button class="xyws-secondary" data-a="export-work">⇩ 导出作品包</button><button class="xyws-secondary xyws-danger" data-a="delete-cloud" data-delete-cloud hidden>删除云端作品</button></div></section>'+
-          '<section class="xyws-screen" data-screen="publish"><div class="xyws-hero"><small>✦ 发布作品</small><h3 data-pubtitle>发布作品</h3><p data-pubhint></p></div><button class="xyws-secondary" data-pick-open data-pickbtn style="margin-bottom:9px">选择发布内容</button><div class="xyws-field"><label>作品名称</label><input data-pubname></div><div class="xyws-field"><label data-pubdesclabel>简单介绍 / 内容</label><textarea data-pubdesc></textarea></div><div data-pubextra></div><div class="xyws-field"><label>标签（可选）</label><input data-pubtags placeholder="例如：校园、新人、经营"></div><button class="xyws-primary" data-a="publish">发布到云端</button></section>'+
+          '<section class="xyws-screen" data-screen="detail"><div class="xyws-pill" data-dtype></div><div class="xyws-detailtitle" data-dtitle></div><div class="xyws-detailmeta" data-dmeta></div><div class="xyws-panel"><div class="xyws-detailbody" data-dbody></div></div><div class="xyws-person-install" data-person-install hidden><button class="xyws-primary" data-a="install-opening">＋ 加入开局名册</button><button class="xyws-primary" data-a="install-now">＋ 中途加入本局</button></div><button class="xyws-primary" data-a="install" data-single-install>＋ 加入本局</button><div class="xyws-actions"><button class="xyws-secondary" data-a="like">♡ 点赞</button><button class="xyws-secondary" data-a="fav">☆ 收藏</button><button class="xyws-secondary" data-a="export-work">⇩ 导出作品包</button><button class="xyws-secondary" data-a="edit-cloud" data-edit-cloud hidden>编辑作品</button><button class="xyws-secondary xyws-danger" data-a="delete-cloud" data-delete-cloud hidden>删除云端作品</button></div></section>'+
+          '<section class="xyws-screen" data-screen="publish"><div class="xyws-hero"><small>✦ 发布作品</small><h3 data-pubtitle>发布作品</h3><p data-pubhint></p></div><div class="xyws-field" data-pubtype-wrap hidden><label>发布栏目</label><select data-pubtype><option value="角色">人物</option><option value="NPC">生灵</option><option value="开局">开局</option><option value="规则">规则</option><option value="玩法">玩法</option><option value="装束">装束</option><option value="能力">能力</option><option value="物品">物品</option></select><div class="xyws-source" style="margin-top:6px">导入作品上传前可以改栏目；工坊会把原内容放进新栏目的正文 / 描述字段，再由你检查后发布。</div></div><button class="xyws-secondary" data-pick-open data-pickbtn style="margin-bottom:9px">选择发布内容</button><div class="xyws-field" data-pubname-wrap><label data-pubnamelabel>作品名称</label><input data-pubname></div><div class="xyws-field" data-pubsummary-wrap><label>简介（选填）</label><textarea data-pubsummary placeholder="留空即可；发布时工坊会根据正文或结构化字段自动补一段简介。"></textarea></div><div class="xyws-field" data-pubdesc-wrap><label data-pubdesclabel>内容</label><textarea data-pubdesc></textarea></div><div data-pubextra></div><div class="xyws-field"><label>标签（可选）</label><input data-pubtags placeholder="例如：校园、新人、经营"></div><button class="xyws-primary" data-a="publish" data-publish-btn>发布到云端</button></section>'+
+          '<section class="xyws-screen" data-screen="importmap"><div class="xyws-hero"><small>⇧ 酒馆世界书</small><h3>选择导入栏目</h3><p>已识别 SillyTavern 世界书。不会再默认塞进“玩法”；先选目标栏目，再导入本地。</p></div><div class="xyws-field"><label>导入到哪个栏目</label><select data-import-target><option value="玩法">玩法</option><option value="开局">开局</option><option value="规则">规则</option><option value="装束">装束</option><option value="角色">人物</option><option value="NPC">生灵</option><option value="能力">能力</option><option value="物品">物品</option></select></div><div class="xyws-panel"><h4 data-import-head>待导入世界书</h4><div class="xyws-muted" data-import-note></div></div><div class="xyws-checklist" data-import-items></div><div class="xyws-actions"><button class="xyws-secondary" data-a="import-cancel">取消</button><button class="xyws-primary" data-a="import-confirm">导入所选条目</button></div></section>'+
           '<section class="xyws-screen" data-screen="picksource"><div class="xyws-hero"><small>✦ 选择发布内容</small><h3 data-picktitle>选择来源</h3><p data-pickhint></p></div><div data-pickitems></div><div class="xyws-actions"><button class="xyws-secondary" data-a="pick-cancel">取消</button><button class="xyws-primary" data-a="pick-done">确定</button></div></section>'+
         '</div>'+
         '<div class="xyws-bottom"><div class="xyws-nav"><button class="on" data-nav="home">✦<br>首页</button><button data-nav="favorite">♡<br>收藏</button><button data-nav="create">＋<br>发布</button></div></div>'+
@@ -168,7 +171,7 @@
       currentScreen=screen;
       $$('[data-screen]').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-screen')===screen);});
       $$('[data-nav]').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-nav')===screen);});
-      $('.xyws-bottom').style.display=(screen==='detail'||screen==='publish'||screen==='picksource'||screen==='auth')?'none':'';
+      $('.xyws-bottom').style.display=(screen==='detail'||screen==='publish'||screen==='picksource'||screen==='importmap'||screen==='auth')?'none':'';
       $('.xyws-main').scrollTop=0;
       if(screen==='home') renderHome();
       if(screen==='favorite') renderFavs();
@@ -194,6 +197,10 @@
     function xywsCanDeleteCloud(w){
       if(!w||!w.xywsCloud||!w.xywsOriginId||!xywsManageLoaded)return false;
       if(xywsManageIsAdmin)return true;
+      return !!xywsManageOwnerSet()[String(w.xywsOriginId)];
+    }
+    function xywsCanEditCloud(w){
+      if(!w||!w.xywsCloud||!w.xywsOriginId||!xywsManageLoaded)return false;
       return !!xywsManageOwnerSet()[String(w.xywsOriginId)];
     }
     function xywsMergedMine(){
@@ -334,10 +341,13 @@
     function card(w, rank, opts){
       var actions='<button class="xyws-mini" data-open="'+esc(w.id)+'">查看</button>';
       if(opts&&opts.canDelete&&w&&w.xywsCloud&&w.xywsOriginId)actions+='<button class="xyws-mini danger" data-delete-work="'+esc(w.xywsOriginId)+'" data-delete-title="'+esc(w.title||'')+'">删除</button>';
-      return '<article class="xyws-card" data-id="'+esc(w.id)+'"><div class="xyws-cardtop"><div class="xyws-orb">'+esc(w.icon||ICON[w.type]||'✦')+'</div><div class="xyws-cmain"><div class="xyws-title">'+(rank?'<span class="xyws-rank">'+rank+'</span>':'')+esc(w.title)+'</div><div class="xyws-desc">'+esc(w.desc||'')+'</div><div class="xyws-tags">'+(w.tags||[]).map(function(t){return '<span class="xyws-tag">'+esc(t)+'</span>';}).join('')+'</div></div></div><div class="xyws-foot"><div class="xyws-stats"><span>♡ '+fmt(w.likes)+'</span><span>使用 '+fmt(w.uses)+'</span></div><div class="xyws-card-actions">'+actions+'</div></div></article>';
+      if(opts&&opts.canEdit)actions+='<button class="xyws-mini" data-edit-work="'+esc(w.id)+'">编辑</button>';
+      if(opts&&opts.canUpload)actions+='<button class="xyws-mini" data-upload-work="'+esc(w.id)+'">上传云端</button>';
+      return '<article class="xyws-card" data-id="'+esc(w.id)+'"><div class="xyws-cardtop"><div class="xyws-orb">'+esc(w.icon||ICON[w.type]||'✦')+'</div><div class="xyws-cmain"><div class="xyws-title">'+(rank?'<span class="xyws-rank">'+rank+'</span>':'')+esc(w.title)+'</div><div class="xyws-desc">'+esc(xywsEnsureSummary(w))+'</div><div class="xyws-tags">'+(w.tags||[]).map(function(t){return '<span class="xyws-tag">'+esc(t)+'</span>';}).join('')+'</div></div></div><div class="xyws-foot"><div class="xyws-stats"><span>♡ '+fmt(w.likes)+'</span><span>下载 '+fmt(w.uses)+'</span></div><div class="xyws-card-actions">'+actions+'</div></div></article>';
     }
     function byId(id){
       for(var i=0;i<WORKS.length;i++)if(WORKS[i].id===id)return WORKS[i];
+      for(var mi=0;mi<(xywsManageWorks||[]).length;mi++)if(xywsManageWorks[mi]&&xywsManageWorks[mi].id===id)return xywsManageWorks[mi];
       var mine=arr(LS_MINE);
       for(var j=0;j<mine.length;j++)if(mine[j]&&mine[j].id===id)return mine[j];
       var imported=arr(LS_IMPORTED);
@@ -455,7 +465,35 @@
         if(it.description)ls.push('作用 / 描述：'+it.description);
         return ls.join('\n');
       }
+      if(w&&(w.type==='NPC'||w.type==='角色')){
+        var ps=xywsWorkNpcSources(w);if(ps.length)return ps.map(function(x){return xywsNpcRecordText(x.npc||x);}).join('\n\n');
+      }
       return String((w&&(w.body||w.desc))||'');
+    }
+    function xywsGeneratedSummary(w){
+      if(!w)return '';
+      if(w.type==='NPC'||w.type==='角色'){
+        try{
+          var src=xywsWorkNpcSources(w),rec=src.length?xywsSanitizeNpcRecord(src[0].npc||src[0],src[0].kind):null,d=rec&&rec.档案||{},rel=rec&&rec.关系||{};
+          var p=[d.种族,d.身份,d.阵营,d.能力系别,rel.与主角关系,d.外貌].filter(Boolean).join(' · ');
+          if(p)return xywsExcerpt(p,220);
+        }catch(e){}
+      }
+      if(w.type==='能力'){
+        var a=w.ability||{},sa=[a.slot,a.school,a.skillType,(a.mpCost!==undefined&&a.mpCost!==null&&a.mpCost!==''?('蓝耗 '+a.mpCost):''),a.effect].filter(Boolean).join(' · ');if(sa)return xywsExcerpt(sa,220);
+      }
+      if(w.type==='物品'){
+        var it=w.item||{},si=[it.category,(it.quantity?('×'+it.quantity):''),it.description].filter(Boolean).join(' · ');if(si)return xywsExcerpt(si,220);
+      }
+      if(w.type==='装束'){
+        var od=w.outfit||{},so=String(od.description||w.body||'').trim();if(so)return xywsExcerpt(so,220);
+      }
+      var body='';try{body=xywsWorkBody(w);}catch(e2){body=String(w.body||'');}
+      return xywsExcerpt(body||w.title||'未命名作品',220);
+    }
+    function xywsEnsureSummary(w){
+      if(!w)return '';
+      var s=String(w.desc||'').trim();if(!s)s=xywsGeneratedSummary(w);if(!s)s=xywsExcerpt(w.title||'未命名作品',220);w.desc=s;return s;
     }
     function xywsManagedStatus(w){
       if(!w)return null;
@@ -476,12 +514,13 @@
       var typeLabel=w.type==='NPC'?'生灵':(w.type==='角色'?'人物':w.type);$('[data-dtype]').textContent=(w.icon||ICON[w.type]||'✦')+' '+typeLabel;
       $('[data-dtitle]').textContent=w.title;
       var authorLabel=w.xywsCloud?('云端'+(w.xywsAuthor?' · '+esc(w.xywsAuthor):'')):(w.xywsImported?('本地导入'+(w.xywsAuthor?' · '+esc(w.xywsAuthor):'')):(String(w.id||'').indexOf('mine_')===0?'我（本地测试）':'社区示例'));
-      $('[data-dmeta]').innerHTML='<span>作者：'+authorLabel+'</span><span>♡ '+fmt(w.likes)+'</span><span>使用 '+fmt(w.uses)+'</span>';
+      $('[data-dmeta]').innerHTML='<span>作者：'+authorLabel+'</span><span>♡ '+fmt(w.likes)+'</span><span>下载 '+fmt(w.uses)+'</span>';
       $('[data-dbody]').textContent=xywsWorkBody(w);
       var favs=arr(LS_FAV), liked=arr(LS_LIKED), ib=$('[data-a="install"]'), ms=xywsManagedStatus(w), person=(w.type==='NPC'||w.type==='角色');
       $('[data-a="fav"]').textContent=favs.indexOf(w.id)>=0?'★ 已收藏':'☆ 收藏';
       $('[data-a="like"]').textContent=liked.indexOf(w.id)>=0?'♥ 已点赞':'♡ 点赞';
       var delBtn=$('[data-delete-cloud]');if(delBtn)delBtn.hidden=!xywsCanDeleteCloud(w);
+      var editBtn=$('[data-edit-cloud]');if(editBtn)editBtn.hidden=!(w.xywsImported||String(w.id||'').indexOf('mine_')===0||xywsCanEditCloud(w));
       var pib=$('[data-person-install]'),sib=$('[data-single-install]');if(pib)pib.hidden=!person;if(sib)sib.style.display=person?'none':'';
       if(w.type==='角色')$('[data-dtype]').textContent=(w.icon||'👤')+' 人物';
       if(ib&&!person){
@@ -497,6 +536,30 @@
 
     function toggleStore(key,id){
       var a=arr(key), i=a.indexOf(id); if(i>=0)a.splice(i,1);else a.push(id);setLS(key,JSON.stringify(a));return a.indexOf(id)>=0;
+    }
+    function xywsSetStoreState(key,id,on){
+      var a=arr(key),i=a.indexOf(id);if(on&&i<0)a.push(id);else if(!on&&i>=0)a.splice(i,1);setLS(key,JSON.stringify(a));return on;
+    }
+    function xywsApplyCloudStats(w,likes,uses){
+      if(!w||!w.xywsOriginId)return;var origin=String(w.xywsOriginId),hasLikes=likes!==undefined&&likes!==null,hasUses=uses!==undefined&&uses!==null;
+      function apply(one){if(!one||String(one.xywsOriginId||'')!==origin)return;if(hasLikes)one.likes=Math.max(0,Number(likes)||0);if(hasUses)one.uses=Math.max(0,Number(uses)||0);}
+      WORKS.forEach(apply);(xywsManageWorks||[]).forEach(apply);apply(currentWork);apply(w);
+      var mine=arr(LS_MINE),changed=false;mine.forEach(function(one){if(one&&String(one.xywsOriginId||'')===origin){apply(one);changed=true;}});if(changed)setLS(LS_MINE,JSON.stringify(mine));
+    }
+    async function xywsToggleCloudLike(w,button){
+      var M=xywsManageApi();if(!M||typeof M.setLike!=='function'){toast('云端点赞计数后端还没更新；当前没有伪造本地数字');return false;}
+      var liked=arr(LS_LIKED).indexOf(w.id)>=0,next=!liked,oldText=button?button.textContent:'';if(button){button.disabled=true;button.textContent=next?'点赞中…':'取消中…';}
+      try{
+        var r=await M.setLike(w.xywsOriginId,next),serverLiked=r&&typeof r.liked==='boolean'?r.liked:next;
+        xywsSetStoreState(LS_LIKED,w.id,serverLiked);xywsApplyCloudStats(w,r&&r.likes!==undefined?r.likes:(Math.max(0,(Number(w.likes)||0)+(serverLiked?1:-1))),undefined);
+        if(currentScreen==='detail'&&currentWork)openDetail(currentWork.id);else if(currentScreen==='home')renderHome();
+        toast(serverLiked?'已点赞':'已取消点赞');return true;
+      }catch(err){toast((err&&err.message)||'云端点赞失败');return false;}
+      finally{if(button&&doc.body.contains(button)){button.disabled=false;button.textContent=oldText;}}
+    }
+    function xywsTrackCloudDownload(w){
+      if(!w||!w.xywsCloud||!w.xywsOriginId)return Promise.resolve(false);var M=xywsManageApi();if(!M||typeof M.recordDownload!=='function')return Promise.resolve(false);
+      return Promise.resolve(M.recordDownload(w.xywsOriginId)).then(function(r){xywsApplyCloudStats(w,undefined,r&&r.uses!==undefined?r.uses:(Number(w.uses)||0)+1);if(currentScreen==='detail'&&currentWork&&String(currentWork.xywsOriginId||'')===String(w.xywsOriginId))openDetail(currentWork.id);else if(currentScreen==='home')renderHome();return true;}).catch(function(err){try{console.error('[XYWS Manage] download count failed:',err&&err.message?err.message:String(err));}catch(e){}return false;});
     }
     function rememberInstalled(w){
       if(!w)return;
@@ -524,65 +587,96 @@
       for(var i=0;i<pool.length;i++)if(s.indexOf(pool[i])>=0)return pool[i];
       return '';
     }
+    function xywsNpcNum(v,d){var n=Number(v);return Number.isFinite(n)?n:(d==null?0:d);}
+    function xywsNpcObj(v){return (v&&typeof v==='object'&&!Array.isArray(v))?v:{};}
+    function xywsNpcRaceForKind(kind){return kind==='mahou'?'魔法少女':(kind==='demon'?'魔人':(kind==='mortal'?'凡人':''));}
+    function xywsNpcKindFromRecord(rec,fallback){
+      var d=xywsNpcObj(rec&&rec.档案),text=[d.种族,d.身份,d.阵营].join(' ');
+      if(/魔人|魔物|魔族|恶魔|深渊|渊裔|寄生体|化形种|原生种/.test(text))return 'demon';
+      if(/魔法少女|守护者|星裔|契约者|战姬/.test(text))return 'mahou';
+      if(/凡人|普通人|人类|学生|教师|医生|研究员|上班族/.test(text))return 'mortal';
+      return /^(mahou|demon|mortal|other)$/.test(String(fallback||''))?String(fallback):'other';
+    }
+    function xywsNpcSanitizeMap(o,shape){
+      var src=xywsNpcObj(o),out={};Object.keys(src).forEach(function(k){
+        if(!k||k==='$meta'||String(k).indexOf('$__')===0)return;
+        var v=xywsNpcObj(src[k]),row={};shape.forEach(function(f){if(v[f]!==undefined&&v[f]!==null&&String(v[f]).trim()!=='')row[f]=v[f];});
+        if(Object.keys(row).length)out[k]=row;
+      });return out;
+    }
+    function xywsSanitizeNpcRecord(raw,kind){
+      raw=xywsNpcObj(raw);kind=xywsNpcKindFromRecord(raw,kind);var d=xywsNpcObj(raw.档案),war=xywsNpcObj(raw.战力),st=xywsNpcObj(raw.状态),co=xywsNpcObj(raw.侵蚀),sp=xywsNpcObj(raw.星灵),rel=xywsNpcObj(raw.关系);
+      var rec={
+        档案:{姓名:String(d.姓名||'').trim(),代号:String(d.代号||'').trim(),性别:String(d.性别||'').trim(),种族:String(d.种族||xywsNpcRaceForKind(kind)).trim(),真实年龄:xywsNpcNum(d.真实年龄,0),表观年龄:xywsNpcNum(d.表观年龄,0),身份:String(d.身份||'').trim(),阵营:String(d.阵营||'').trim(),能力系别:String(d.能力系别||'').trim(),亲和体质:String(d.亲和体质||'').trim(),契龄:xywsNpcNum(d.契龄,0),外貌:String(d.外貌||'').trim()},
+        战力:{等级:xywsNpcNum(war.等级,0),经验:xywsNpcNum(war.经验,0),层级声明:String(war.层级声明||war._阶级||war._位格||'').trim()},
+        状态:{生命:xywsNpcNum(st.生命,100),魔力:xywsNpcNum(st.魔力,kind==='mortal'?0:100),情欲:xywsNpcNum(st.情欲,0),变身:/变身中|已变身|现形/.test(String(st.变身||''))?'变身中':'日常态',战服:String(st.战服||'').trim(),处境:String(st.处境||'').trim(),战况:String(st.战况||'无战事').trim()||'无战事',伤势:xywsNpcObj(st.伤势),位置:String(st.位置||'').trim()},
+        侵蚀:{阶段:['未染','初蚀','沉沦','半堕','恶堕'].indexOf(String(co.阶段||''))>=0?String(co.阶段):'未染',侵蚀值:xywsNpcNum(co.侵蚀值,0)},
+        星灵:{名号:String(sp.名号||'').trim(),本相:String(sp.本相||'').trim(),现状:String(sp.现状||'').trim(),蚀相:String(sp.蚀相||'').trim(),言语:['可言语','不言语'].indexOf(String(sp.言语||''))>=0?String(sp.言语):'',羁绊:xywsNpcNum(sp.羁绊,0),羁绊描述:String(sp.羁绊描述||'').trim()},
+        躯体:xywsNpcSanitizeMap(raw.躯体,['白描','变身装甲']),
+        星器:xywsNpcSanitizeMap(raw.星器,['类型','品阶','契合','效果']),
+        招式:xywsNpcSanitizeMap(raw.招式,['档位','系别','类型','蓝耗','效果']),
+        背包:xywsNpcSanitizeMap(raw.背包,['数量','类别','描述']),
+        金钱:xywsNpcNum(raw.金钱,0),
+        关系:{与主角关系:String(rel.与主角关系||'').trim(),好感度:xywsNpcNum(rel.好感度,0),钩子:String(rel.钩子||'').trim(),秘密:String(rel.秘密||'').trim(),最后出场:String(rel.最后出场||'').trim()}
+      };
+      Object.keys(rec.招式).forEach(function(k){var a=rec.招式[k];a.蓝耗=xywsNpcNum(a.蓝耗,0);});
+      Object.keys(rec.背包).forEach(function(k){var it=rec.背包[k];it.数量=Math.max(0,Math.round(xywsNpcNum(it.数量,0)));});
+      return rec;
+    }
+    function xywsNpcSourceFromRecord(rec,kind,debut){rec=xywsSanitizeNpcRecord(rec,kind);return {kind:xywsNpcKindFromRecord(rec,kind),name:String(rec.档案.姓名||'').trim(),debut:String(debut||'').trim(),include:true,npc:rec};}
+    function xywsNpcRecordText(rec){
+      rec=xywsSanitizeNpcRecord(rec);var L=[];function add(k,v){if(v!==undefined&&v!==null&&String(v).trim()!==''&&!(typeof v==='number'&&v===0))L.push(k+'：'+String(v));}
+      var d=rec.档案,w=rec.战力,st=rec.状态,co=rec.侵蚀,sp=rec.星灵,r=rec.关系;
+      add('姓名',d.姓名);add('代号',d.代号);add('性别',d.性别);add('种族',d.种族);add('真实年龄',d.真实年龄);add('表观年龄',d.表观年龄);add('身份',d.身份);add('阵营',d.阵营);add('能力系别',d.能力系别);add('亲和体质',d.亲和体质);add('契龄',d.契龄);add('外貌',d.外貌);add('层级声明',w.层级声明);add('等级',w.等级);add('经验',w.经验);add('生命',st.生命);add('魔力/能量',st.魔力);add('情欲',st.情欲);add('位置',st.位置);add('处境',st.处境);add('战况',st.战况&&st.战况!=='无战事'?st.战况:'');add('当前形态',st.变身);add('当前战服/装备',st.战服);add('侵蚀阶段',co.阶段!=='未染'?co.阶段:'');add('侵蚀值',co.侵蚀值);add('与主角关系',r.与主角关系);add('好感度',r.好感度);add('最后出场',r.最后出场);add('钩子',r.钩子);add('秘密',r.秘密);
+      var injuries=Object.keys(st.伤势||{});if(injuries.length)L.push('伤势：'+injuries.map(function(n){return n+'：'+String(st.伤势[n]||'');}).join('；'));
+      if(sp.名号||sp.本相||sp.现状||sp.蚀相||sp.言语||sp.羁绊||sp.羁绊描述)L.push('星灵：'+[sp.名号,sp.本相,sp.言语,sp.现状,sp.蚀相,sp.羁绊?('羁绊'+sp.羁绊):'',sp.羁绊描述].filter(Boolean).join(' · '));
+      var bodyKeys=Object.keys(rec.躯体||{});if(bodyKeys.length)L.push('躯体 / 外观：'+bodyKeys.map(function(n){var b=rec.躯体[n]||{};return n+'【'+[b.白描,b.变身装甲].filter(Boolean).join(' / ')+'】';}).join('\n'));
+      var skills=Object.keys(rec.招式);if(skills.length)L.push('招式：'+skills.map(function(n){var a=rec.招式[n];return n+'【'+[a.档位,a.系别,a.类型,a.蓝耗!==undefined?('蓝耗'+a.蓝耗):''].filter(Boolean).join(' · ')+'】'+String(a.效果||'');}).join('\n'));
+      var gears=Object.keys(rec.星器);if(gears.length)L.push('星器：'+gears.map(function(n){var a=rec.星器[n];return n+'【'+[a.类型,a.品阶,a.契合].filter(Boolean).join(' · ')+'】'+String(a.效果||'');}).join('\n'));
+      var items=Object.keys(rec.背包);if(items.length)L.push('物品：'+items.map(function(n){var a=rec.背包[n];return n+' ×'+(a.数量||0)+' · '+String(a.类别||'')+' · '+String(a.描述||'');}).join('\n'));add('金钱',rec.金钱);
+      return L.join('\n');
+    }
     function xywsProfileToNpcSource(raw,w){
-      raw=(raw&&typeof raw==='object'&&!Array.isArray(raw))?raw:{};
-      var st=(raw.state&&typeof raw.state==='object'&&!Array.isArray(raw.state))?raw.state:{};
-      var demon=String(st.role||'')==='demon'||/魔人|魔物|深渊/.test([w&&w.title,w&&w.desc,w&&w.body,(w&&w.tags||[]).join(' ')].join(' '));
+      raw=xywsNpcObj(raw);var st=xywsNpcObj(raw.state),demon=String(st.role||'')==='demon'||/魔人|魔物|深渊/.test([w&&w.title,w&&w.desc,w&&w.body,(w&&w.tags||[]).join(' ')].join(' ')),kind=demon?'demon':'mahou';
       var name=String((demon?(st.demon_name||st.demon_title):(st.name||st.title))||raw.name||(w&&w.title)||'工坊人物').trim()||'工坊人物';
-      if(demon){
-        return {kind:'demon',name:name,sexage:String(st.demon_gender||'')+(st.demon_age?('/'+st.demon_age):''),rel:'',look:String(st.look||st.demon_outfit||''),hook:[st.demon_trait,st.demon_origin,st.demon_weakness,w&&w.body].filter(Boolean).join('｜'),debut:String(st.demon_plot||''),type:String(st.demon_kind||'魔人'),rank:String(st.demon_tier||''),threat:String(st.demon_tier||st.demon_threat||''),power:String(st.demon_power||st.demon_power_desc||''),star:String(st.demon_core_name||st.demon_core||'')};
-      }
-      return {kind:'mahou',name:name,sexage:st.age?String(st.age):'',rel:'',look:String(st.look||st.mahou_outfit||''),hook:[st.trait,st.weakness,st.power_desc,w&&w.body].filter(Boolean).join('｜'),debut:String(st.route||''),camp:String(st.camp||''),rank:String(st.rank||''),power:String(st.power||st.power_desc||''),star:String(st.astral_type||st.astral_form||''),corr:String(st.corruption_stage||'未染')};
+      var rec=xywsSanitizeNpcRecord({
+        档案:{姓名:name,代号:demon?String(st.demon_title||''):String(st.title||''),性别:demon?String(st.demon_gender||''):'',种族:demon?String(st.demon_kind||'魔人'):'魔法少女',真实年龄:demon?xywsNpcNum(st.demon_age,0):xywsNpcNum(st.age,0),表观年龄:demon?xywsNpcNum(st.demon_age,0):xywsNpcNum(st.age,0),身份:demon?String(st.demon_identity||''):String(st.identity||''),阵营:demon?String(st.demon_camp||''):String(st.camp||''),能力系别:demon?String(st.demon_power||''):String(st.power||''),亲和体质:'',契龄:0,外貌:String(st.look||'')},
+        战力:{等级:0,经验:0,层级声明:demon?String(st.demon_tier||''):String(st.rank||'')},
+        状态:{生命:100,魔力:demon?100:100,情欲:0,变身:'日常态',战服:'',处境:'',战况:'无战事',伤势:{},位置:''},
+        侵蚀:{阶段:demon?'未染':String(st.corruption_stage||'未染'),侵蚀值:0},
+        星灵:demon?{}:{名号:'',本相:String(st.astral_form||''),现状:'',蚀相:'',言语:String(st.astral_voice||''),羁绊:0,羁绊描述:String(st.astral_relation||'')},
+        躯体:{变身外观:{白描:String(st.look||''),变身装甲:demon?String(st.demon_outfit||''):String(st.mahou_outfit||'')}},
+        星器:{},招式:{},背包:{},金钱:0,
+        关系:{与主角关系:'',好感度:0,钩子:String(demon?st.demon_trait:st.trait||''),秘密:String(demon?st.demon_origin:'').trim(),最后出场:''}
+      },kind);
+      return xywsNpcSourceFromRecord(rec,kind,demon?String(st.demon_plot||''):String(st.route||''));
     }
     function xywsDefaultNpcSource(w){
-      var text=[w&&w.title,w&&w.desc,w&&w.body,(w&&w.tags||[]).join(' '),w&&w.subtype].join(' '),kind='mortal',type='';
-      if(/魔人|魔物|魔兽|怪物|深渊|恶魔/.test(text)){kind='demon';type=/魔物|魔兽|怪物/.test(text)?'魔物':'魔人';}
-      else if(/星灵|使魔|灵兽|宠物|召唤物/.test(text)){kind='other';type=/星灵/.test(text)?'星灵':(/使魔/.test(text)?'使魔':'其他配角');}
-      else if((w&&w.type)==='角色'||/魔法少女|守护者|学姐|学妹|战姬|治愈系|能力系/.test(text)){kind='mahou';}
-      return {kind:kind,name:String((w&&w.title)||'工坊人物').trim()||'工坊人物',sexage:'',rel:'工坊追加人物',look:'',hook:String((w&&(w.body||w.desc))||''),debut:'',type:type,job:kind==='mortal'?'普通社会人物':'',skill:'',camp:'',rank:'',power:'',star:'',corr:'未染',include:true};
+      var text=[w&&w.title,w&&w.desc,w&&w.body,(w&&w.tags||[]).join(' '),w&&w.subtype].join(' '),kind='mortal',race='凡人';
+      if(/魔人|魔物|魔兽|怪物|深渊|恶魔/.test(text)){kind='demon';race=/魔物|魔兽|怪物/.test(text)?'魔物':'魔人';}
+      else if(/星灵|使魔|灵兽|宠物|召唤物/.test(text)){kind='other';race=/星灵/.test(text)?'星灵':(/使魔/.test(text)?'使魔':'异种生命');}
+      else if((w&&w.type)==='角色'||/魔法少女|守护者|学姐|学妹|战姬|治愈系|能力系/.test(text)){kind='mahou';race='魔法少女';}
+      var rec=xywsSanitizeNpcRecord({档案:{姓名:String((w&&w.title)||'工坊人物').trim()||'工坊人物',种族:race,身份:race,外貌:''},状态:{生命:100,魔力:kind==='mortal'?0:100,变身:'日常态',战况:'无战事',处境:'已由星海工坊加入·待登场'},关系:{与主角关系:'工坊追加人物',钩子:String((w&&(w.body||w.desc))||'')}},kind);
+      return xywsNpcSourceFromRecord(rec,kind,'');
     }
     function xywsNormalizeNpcSource(raw,w){
-      if((w&&w.type)==='角色' && raw && typeof raw==='object' && raw.state)return xywsProfileToNpcSource(raw,w);
+      if((w&&w.type)==='角色'&&raw&&typeof raw==='object'&&raw.state)return xywsProfileToNpcSource(raw,w);
       if(raw&&typeof raw==='object'&&!Array.isArray(raw)){
-        var p=xywsClone(raw)||{};
-        if(!p.kind){
-          var d=xywsDefaultNpcSource(w);p.kind=d.kind;if(!p.type)p.type=d.type;
-        }
-        if(p.kind==='spirit'){p.kind='other';if(!p.type)p.type='星灵';}
-        if(!/^(mahou|demon|mortal|other)$/.test(String(p.kind||'')))p.kind='other';
-        if(!p.name)p.name=(w&&w.title)||'工坊人物';
-        p.include=true;
-        return p;
+        if(raw.npc&&raw.npc.档案)return xywsNpcSourceFromRecord(raw.npc,raw.kind,raw.debut);
+        if(raw.档案&&raw.关系)return xywsNpcSourceFromRecord(raw,raw.kind,raw.debut);
+        var d=xywsDefaultNpcSource(w),rec=d.npc,kind=/^(mahou|demon|mortal|other)$/.test(String(raw.kind||''))?String(raw.kind):d.kind,sa=xywsSexAge(raw.sexage),nm=String(raw.name||(w&&w.title)||'工坊人物').trim()||'工坊人物';
+        rec.档案.姓名=nm;rec.档案.性别=sa.sex==='待定'?'':sa.sex;rec.档案.真实年龄=sa.age;rec.档案.表观年龄=sa.age;rec.档案.种族=kind==='mahou'?'魔法少女':(kind==='demon'?String(raw.type||'魔人'):(kind==='mortal'?'凡人':String(raw.type||'异种生命')));rec.档案.身份=kind==='mortal'?String(raw.job||''):String(raw.type||rec.档案.种族);rec.档案.阵营=String(raw.camp||'');rec.档案.能力系别=String(raw.power||raw.skill||'');rec.档案.外貌=String(raw.look||'');
+        rec.战力.层级声明=String(raw.threat||raw.rank||'');var lm=String(raw.rank||'').match(/(?:Lv\.?\s*)?(\d{1,3})/i);rec.战力.等级=lm?Number(lm[1])||0:0;rec.侵蚀.阶段=kind==='mahou'&&['未染','初蚀','沉沦','半堕','恶堕'].indexOf(String(raw.corr||''))>=0?String(raw.corr):'未染';rec.关系.与主角关系=String(raw.rel||'');rec.关系.钩子=String(raw.hook||'');
+        if(kind==='mahou'&&raw.star){rec.星器[String(raw.star)]={类型:'',品阶:'寻常',契合:'初缔',效果:''};}
+        return xywsNpcSourceFromRecord(rec,kind,raw.debut);
       }
       return xywsDefaultNpcSource(w);
     }
     function xywsWorkNpcSources(w){
-      var src=(Array.isArray(w&&w.source)&&w.source.length)?w.source:[null],out=[];
-      for(var i=0;i<src.length;i++)out.push(xywsNormalizeNpcSource(src[i],w));
-      return out;
+      var src=(Array.isArray(w&&w.source)&&w.source.length)?w.source:[null],out=[];for(var i=0;i<src.length;i++)out.push(xywsNormalizeNpcSource(src[i],w));return out;
     }
     function xywsNpcRecord(p,w){
-      p=(p&&typeof p==='object'&&!Array.isArray(p))?p:{};
-      var kind=String(p.kind||'').trim();
-      if(!kind){
-        var tagText=(w.tags||[]).join(' ')+' '+String(w.body||w.desc||'');
-        kind=/魔人|魔物|深渊/.test(tagText)?'demon':(/魔法少女/.test(tagText)?'mahou':(/星灵|使魔|灵兽/.test(tagText)?'other':'mortal'));
-      }
-      var sa=xywsSexAge(p.sexage), name=String(p.name||w.title||'工坊人物').trim()||'工坊人物';
-      var lv=0, lm=String(p.rank||'').match(/(?:Lv\.?\s*)?(\d{1,3})/i); if(lm)lv=Number(lm[1])||0;
-      var race=kind==='mahou'?'魔法少女':(kind==='demon'?(p.type||'魔人'):(kind==='other'?(p.type||'其他配角'):'凡人'));
-      var identity=kind==='mortal'?(p.job||'凡人'):(kind==='demon'?(p.type||'魔人'):(kind==='other'?(p.type||'其他配角'):'魔法少女'));
-      var rank=xywsRankWord(p.rank,kind), tier=String(p.threat||'').trim()||(kind==='demon'?xywsRankWord(p.rank,'demon'):'');
-      var hook=[String(p.hook||w.body||w.desc||'').trim(),p.debut?('登场偏好：'+String(p.debut).trim()):''].filter(Boolean).join('｜');
-      return {
-        档案:{姓名:name,代号:'',性别:sa.sex,种族:race,真实年龄:sa.age,表观年龄:sa.age,身份:identity,阵营:String(p.camp||''),能力系别:String(p.power||p.skill||''),亲和体质:'',契龄:0,外貌:String(p.look||'')},
-        战力:{等级:lv,经验:0,层级声明:kind==='demon'?tier:rank,_阶级:kind==='mahou'?rank:'',_位格:kind==='demon'?tier:'',_升级所需经验:20,_本阶等级上限:10,_晋阶提示:'工坊导入·待剧情校准'},
-        状态:{生命:100,魔力:kind==='mortal'?0:100,情欲:0,变身:'日常态',战服:'',处境:'已由星海工坊加入·待登场',战况:'无战事',伤势:{},位置:'',_生命上限:0,_魔力上限:0,_战服状态:'完整',_日常装束缓存:'',_变身装束缓存:'',_形态判定来源:'工坊导入',_形态判定轮次:0,_穿透率P:0.1,_已入场:0,_档案未齐:0},
-        侵蚀:{阶段:kind==='mahou'?(p.corr||'未染'):'未染',侵蚀值:0},
-        星灵:{名号:'',本相:'',现状:'',蚀相:'',言语:'',羁绊:0,羁绊描述:''},
-        躯体:{},星器:{},招式:{},背包:{},金钱:0,
-        关系:{与主角关系:String(p.rel||'工坊追加人物'),好感度:0,钩子:hook,秘密:'',最后出场:''}
-      };
+      p=(p&&typeof p==='object'&&!Array.isArray(p))?p:{};if(p.npc&&p.npc.档案)return xywsSanitizeNpcRecord(p.npc,p.kind);if(p.档案&&p.关系)return xywsSanitizeNpcRecord(p,p.kind);return xywsNormalizeNpcSource(p,w).npc;
     }
     function xywsUniqueNpcKey(map,name){
       if(!Object.prototype.hasOwnProperty.call(map,name))return name;
@@ -591,20 +685,19 @@
       return base+n;
     }
     async function xywsInstallNpc(w){
-      var M=xywsResolveMvu();
-      if(!M)return {ok:false,msg:'没有找到 MVU 写入接口；请确认 MVU / 酒馆助手已正常加载'};
-      var opt={type:'message',message_id:'latest'}, oldData=null;
-      try{oldData=M.getMvuData(opt);}catch(e){}
+      var M=xywsResolveMvu();if(!M)return {ok:false,msg:'没有找到 MVU 写入接口；请确认 MVU / 酒馆助手已正常加载'};
+      var opt={type:'message',message_id:'latest'},oldData=null;try{oldData=M.getMvuData(opt);}catch(e){}
       if(!oldData||!oldData.stat_data)return {ok:false,msg:'当前楼层还没有可写入的 MVU 数据'};
-      var next=xywsClone(oldData); if(!next||!next.stat_data)return {ok:false,msg:'复制当前 MVU 数据失败'};
+      var next=xywsClone(oldData);if(!next||!next.stat_data)return {ok:false,msg:'复制当前 MVU 数据失败'};
       if(!next.stat_data.重要人物||typeof next.stat_data.重要人物!=='object'||Array.isArray(next.stat_data.重要人物))next.stat_data.重要人物={};
-      var src=xywsWorkNpcSources(w), names=[];
+      var src=xywsWorkNpcSources(w),names=[];
       for(var i=0;i<src.length;i++){
-        var rec=xywsNpcRecord(src[i],w), key=xywsUniqueNpcKey(next.stat_data.重要人物,rec.档案.姓名);
-        rec.档案.姓名=key; next.stat_data.重要人物[key]=rec; names.push(key);
+        var rec=xywsNpcRecord(src[i],w),base=String(rec.档案.姓名||'').trim();
+        if(!base){return {ok:false,msg:'人物姓名为空，无法直接建立 /重要人物/<姓名>；请先补名后再安装'};}
+        var key=xywsUniqueNpcKey(next.stat_data.重要人物,base);rec.档案.姓名=key;if(!rec.状态.处境)rec.状态.处境='已由星海工坊加入·待登场';next.stat_data.重要人物[key]=rec;names.push(key);
       }
       try{await M.replaceMvuData(next,opt);}catch(ex){return {ok:false,msg:'MVU 写入失败：'+(ex&&ex.message?ex.message:'未知错误')};}
-      return {ok:true,msg:'已加入人物档案：'+names.join('、')};
+      return {ok:true,msg:'已按完整人物结构加入：'+names.join('、')};
     }
     function xywsResolveOpeningRosterBridge(){
       var cand=[];
@@ -627,8 +720,8 @@
       // 兜底：同源环境下直接写本地名册；开场白重新打开后会读取。
       try{
         var a=JSON.parse(getLS('star_pact_cur_v5_roster','[]'));if(!Array.isArray(a))a=[];
-        var used={};a.forEach(function(p){if(p&&p.name)used[String(p.name)]=1;});
-        items.forEach(function(p){p=xywsClone(p)||{};var name=String(p.name||'工坊人物'),base=name,n=2;while(used[name])name=base+'（工坊'+(n>2?n:'')+'）',n++;used[name]=1;p.name=name;p.include=true;a.push(p);});
+        var used={};a.forEach(function(p){var nm=p&&p.npc&&p.npc.档案?p.npc.档案.姓名:(p&&p.name);if(nm)used[String(nm)]=1;});
+        items.forEach(function(p){p=xywsClone(p)||{};var name=String((p.npc&&p.npc.档案&&p.npc.档案.姓名)||p.name||'工坊人物'),base=name,n=2;while(used[name])name=base+'（工坊'+(n>2?n:'')+'）',n++;used[name]=1;p.name=name;if(p.npc&&p.npc.档案)p.npc.档案.姓名=name;p.include=true;a.push(p);});
         setLS('star_pact_cur_v5_roster',JSON.stringify(a));
         return {ok:true,msg:'已写入开局名册存档；重新打开开场白后可见'};
       }catch(e2){return {ok:false,msg:'没有找到开场白名册桥接；请先使用新版轻量开场白入口'};}
@@ -803,8 +896,8 @@
     }
     async function installPerson(mode){
       if(!currentWork||(currentWork.type!=='NPC'&&currentWork.type!=='角色'))return;
-      var r=mode==='opening'?xywsInstallNpcOpening(currentWork):await xywsInstallNpc(currentWork);
-      if(r&&r.ok){rememberInstalled(currentWork);toast(r.msg||(mode==='opening'?'已加入开局名册':'已中途加入本局'));}
+      var target=currentWork,r=mode==='opening'?xywsInstallNpcOpening(target):await xywsInstallNpc(target);
+      if(r&&r.ok){rememberInstalled(target);xywsTrackCloudDownload(target);toast(r.msg||(mode==='opening'?'已加入开局名册':'已中途加入本局'));}
       else toast((r&&r.msg)||'人物加入失败');
     }
     async function installCurrent(){
@@ -818,7 +911,7 @@
       else if(currentWork.type==='物品')r=await xywsInstallItem(currentWork);
       else if(currentWork.type==='NPC'||currentWork.type==='角色'){await installPerson('now');return;}
       else{toast('这个作品类型暂未接入真实导入');return;}
-      if(r&&r.ok){rememberInstalled(currentWork);toast(r.msg||'已加入本局');if(currentWork.type==='规则'||currentWork.type==='玩法')openDetail(currentWork.id);}
+      if(r&&r.ok){var installedWork=currentWork;rememberInstalled(installedWork);xywsTrackCloudDownload(installedWork);toast(r.msg||'已加入本局');if(installedWork.type==='规则'||installedWork.type==='玩法')openDetail(installedWork.id);}
       else toast((r&&r.msg)||'加入本局失败');
     }
 
@@ -860,7 +953,7 @@
         contentType:kind,
         subtype:kind==='person'?xywsPersonSubtype(w):'',
         title:String(w.title||'未命名作品').slice(0,120),
-        summary:String(w.desc||'').slice(0,4000),
+        summary:String(xywsEnsureSummary(w)).slice(0,4000),
         tags:(Array.isArray(w.tags)?w.tags:[]).map(function(x){return String(x).slice(0,60);}).slice(0,24),
         payload:payload,
         createdAt:Number(w.created||w.createdAt)||0,
@@ -868,7 +961,7 @@
       };
     }
     function xywsBuildPackage(works){
-      return {schema:XYWS_PACKAGE_SCHEMA,version:XYWS_PACKAGE_VERSION,exportedAt:new Date().toISOString(),generator:'星海工坊 V1.9',works:(works||[]).map(xywsCanonicalWork)};
+      return {schema:XYWS_PACKAGE_SCHEMA,version:XYWS_PACKAGE_VERSION,exportedAt:new Date().toISOString(),generator:'星海工坊 V2.0',works:(works||[]).map(xywsCanonicalWork)};
     }
     function xywsDownloadJson(obj,name){
       try{
@@ -901,6 +994,7 @@
       else if(kind==='outfit'){w.outfit={description:String(p.description||'')};w.body=w.outfit.description||w.desc;}
       else if(kind==='ability'){w.ability={skillName:String(p.skillName||''),slot:String(p.slot||''),school:String(p.school||''),skillType:String(p.skillType||''),mpCost:Number(p.mpCost),effect:String(p.effect||'')};w.body=xywsWorkBody(w);}
       else if(kind==='item'){w.item={category:String(p.category||''),quantity:Number(p.quantity)||1,description:String(p.description||'')};w.body=xywsWorkBody(w);}
+      xywsEnsureSummary(w);
       return w;
     }
     function xywsParsePackage(raw){
@@ -911,16 +1005,44 @@
       if(pack.works.length>XYWS_MAX_IMPORT_WORKS)throw new Error('单次最多导入 '+XYWS_MAX_IMPORT_WORKS+' 个作品');
       return pack.works.map(xywsFromCanonical);
     }
-    function xywsImportText(raw){
-      var incoming=xywsParsePackage(raw),old=arr(LS_IMPORTED),origin={};
+    function xywsSaveImported(incoming){
+      var old=arr(LS_IMPORTED),origin={};
       old.forEach(function(w){if(w&&w.xywsOriginId)origin[String(w.xywsOriginId)+'|'+String(w.title||'')]=1;});
       var added=[];incoming.forEach(function(w){var k=String(w.xywsOriginId||'')+'|'+String(w.title||'');if(k!=='|'&&origin[k])return;origin[k]=1;old.unshift(w);added.push(w);});
       setLS(LS_IMPORTED,JSON.stringify(old));return {added:added,total:incoming.length};
     }
+    function xywsImportText(raw){return xywsSaveImported(xywsParsePackage(raw));}
+    function xywsWorldbookEntries(pack){
+      if(!pack||typeof pack!=='object')return [];var src=pack.entries;if(!src||typeof src!=='object')return [];var rows=[];
+      if(Array.isArray(src))rows=src.slice();else Object.keys(src).sort(function(a,b){var na=Number(a),nb=Number(b);return Number.isFinite(na)&&Number.isFinite(nb)?na-nb:String(a).localeCompare(String(b));}).forEach(function(k){var e=src[k];if(e&&typeof e==='object'){var c=xywsClone(e)||{};if(c.uid===undefined)c.uid=k;rows.push(c);}});
+      return rows.filter(function(e){return e&&typeof e==='object'&&String(e.content||'').trim();}).slice(0,XYWS_MAX_IMPORT_WORKS);
+    }
+    function xywsWorldbookTitle(e,idx){
+      var key=Array.isArray(e&&e.key)?e.key.filter(Boolean).join(' / '):String((e&&e.key)||'').trim();return String((e&&e.comment)||(e&&e.name)||key||('世界书条目 '+(idx+1))).trim().slice(0,120)||('世界书条目 '+(idx+1));
+    }
+    function xywsWorldbookWork(e,targetType,idx){
+      // 世界书原文必须逐字保留。这里只用 trim() 判断是否为空，绝不把 trim() 后的结果写回正文。
+      var content=String((e&&e.content)||''),title=xywsWorldbookTitle(e,idx),origin='stwb:'+xywsHash(String((e&&e.uid)||idx)+'|'+title+'|'+content),w={id:xywsImportedId({originId:origin,title:title},idx),xywsOriginId:origin,xywsImported:true,xywsImportFormat:'sillytavern.worldbook',xywsRawContent:content,xywsAuthor:'',type:targetType,icon:ICON[targetType]||'✦',title:title,desc:'',tags:['酒馆世界书'],likes:0,uses:0,created:Date.now(),body:content,source:[]};
+      if(targetType==='角色'||targetType==='NPC'){
+        var pk=targetType==='角色'?'mahou':'other',pr=xywsSanitizeNpcRecord({档案:{姓名:title,种族:targetType==='角色'?'魔法少女':'异种生命',身份:''},关系:{与主角关系:'',钩子:'',秘密:''}},pk);w.source=[xywsNpcSourceFromRecord(pr,pk,'')];
+      }
+      else if(targetType==='开局')w.source=String(content).trim()?[content]:[];
+      else if(targetType==='规则')w.source=[{id:'stwb_rule_'+idx,text:content,on:true,xywsPreserveRaw:true}];
+      else if(targetType==='装束')w.outfit={description:content};
+      else if(targetType==='能力'){w.ability={skillName:title,slot:'基础攻防',school:'未分类',skillType:'',mpCost:0,effect:content};}
+      else if(targetType==='物品'){w.item={category:'世界书导入',quantity:1,description:content};}
+      xywsEnsureSummary(w);return w;
+    }
+    function xywsRenderImportMap(){
+      if(!xywsPendingImport)return;var rows=xywsPendingImport.entries||[],head=$('[data-import-head]'),note=$('[data-import-note]'),box=$('[data-import-items]');if(head)head.textContent=(xywsPendingImport.fileName||'世界书')+' · '+rows.length+' 条';if(note)note.textContent='每条会保留原 content 文本；comment / key 只用于生成标题。结构化栏目（能力、物品、人物、生灵）导入后仍可在“我的 → 上传云端”里继续检查和修改。';if(box)box.innerHTML=rows.map(function(e,i){return '<label class="xyws-check"><input type="checkbox" data-import-entry="'+i+'" checked><span><b>'+esc(xywsWorldbookTitle(e,i))+'</b><br>'+esc(xywsExcerpt(e.content,150))+'</span></label>';}).join('');
+    }
+    function xywsConfirmWorldbookImport(){
+      if(!xywsPendingImport)return;var target=String(($('[data-import-target]')||{}).value||'玩法'),rows=xywsPendingImport.entries||[],picked=[];$$('[data-import-entry]').forEach(function(x){if(x.checked)picked.push(Number(x.getAttribute('data-import-entry')));});if(!picked.length){toast('请至少选择一条世界书内容');return;}var incoming=picked.map(function(i){return xywsWorldbookWork(rows[i],target,i);}),r=xywsSaveImported(incoming);xywsPendingImport=null;toast(r.added.length?('已导入 '+r.added.length+' 个作品到“'+target+'”'):('作品已存在，没有重复导入'));renderMine();show('mine');
+    }
     function xywsReadImportFile(file){
       if(!file)return;
       if(file.size>2*1024*1024){toast('作品包过大：当前单文件限制 2MB');return;}
-      var rd=new win.FileReader();rd.onload=function(){try{var r=xywsImportText(String(rd.result||''));toast(r.added.length?('已导入 '+r.added.length+' 个作品'):('作品已存在，没有重复导入'));renderMine();}catch(e){toast('导入失败：'+(e&&e.message?e.message:'格式错误'));}};rd.onerror=function(){toast('读取作品包失败');};rd.readAsText(file,'utf-8');
+      var rd=new win.FileReader();rd.onload=function(){try{var raw=String(rd.result||''),obj=JSON.parse(raw);if(obj&&obj.schema===XYWS_PACKAGE_SCHEMA){var r=xywsImportText(obj);toast(r.added.length?('已导入 '+r.added.length+' 个作品'):('作品已存在，没有重复导入'));renderMine();show('mine');return;}var wb=xywsWorldbookEntries(obj);if(wb.length){xywsPendingImport={fileName:String(file.name||'酒馆世界书.json'),entries:wb};xywsRenderImportMap();show('importmap');return;}throw new Error('既不是星海工坊作品包，也没有识别到 SillyTavern 世界书 entries');}catch(e){toast('导入失败：'+(e&&e.message?e.message:'格式错误'));}};rd.onerror=function(){toast('读取作品包失败');};rd.readAsText(file,'utf-8');
     }
 
     function renderMine(){
@@ -935,13 +1057,13 @@
       h+='<div class="xyws-panel"><h4>账号</h4><div class="xyws-account">'+av+'<div class="xyws-account-copy"><b>'+esc(name)+'</b>'+(prof&&prof.username?('<span>@'+esc(prof.username)+'</span>'):'')+'<span>已登录 · Discord</span>'+(xywsProbeOk?'<span>CloudBase 身份 · 已验证</span>':'')+'</div><div class="xyws-account-btns"><button class="xyws-secondary" data-a="auth-probe">验证云端身份</button><button class="xyws-secondary" data-a="auth-logout">退出登录</button></div></div></div>';
       var installed=arr(LS_INST).map(byId).filter(function(w){return w&&w.type!=='规则'&&w.type!=='玩法';}),localMine=arr(LS_MINE),mine=xywsMergedMine(),imported=arr(LS_IMPORTED);
       h+='<div class="xyws-panel"><h4>一次性导入记录 · '+installed.length+'</h4><div class="xyws-muted">'+(installed.length?installed.map(function(w){return (w.icon||ICON[w.type]||'✦')+' '+esc(w.title);}).join('<br>'):'暂无；人物/生灵、装束、能力、物品属于一次性安装，开局作品会写入聊天框。')+'</div></div>';
-      h+='<div class="xyws-panel"><h4>作品包 · XYWS Package v1</h4><div class="xyws-muted">这是公共服务器前的统一交换格式。可先手动导出 JSON，再在另一浏览器 / 设备导入，验证作品数据与安装路由。</div><div class="xyws-actions" style="margin-top:10px"><button class="xyws-secondary" data-a="import-pack">⇧ 导入作品包</button><button class="xyws-secondary" data-a="export-mine" '+(localMine.length?'':'disabled')+'>⇩ 导出我的全部作品</button></div></div>';
+      h+='<div class="xyws-panel"><h4>导入 / 导出 · XYWS Package v1</h4><div class="xyws-muted">支持星海工坊标准作品包，也能识别 SillyTavern 世界书 entries。世界书导入时会先让你选择目标栏目，不再默认塞进“玩法”。</div><div class="xyws-actions" style="margin-top:10px"><button class="xyws-secondary" data-a="import-pack">⇧ 导入 JSON</button><button class="xyws-secondary" data-a="export-mine" '+(localMine.length?'':'disabled')+'>⇩ 导出我的全部作品</button></div></div>';
       h+='<div class="xyws-panel"><h4>长期内容管理</h4><div class="xyws-muted">规则与玩法已移到首页分类栏的“已启用”页集中整理，避免和作品库混在一起。</div></div>';
-      h+='<div class="xyws-panel"><h4>我的作品 · '+mine.length+'</h4><div class="xyws-muted">'+(xywsManageLoaded?'已按服务器 ownership 同步当前账号的云端作品；本机旧镜像仍会保留显示。':'正在同步服务器 ownership；同步完成后可跨浏览器管理并删除自己的云端作品。')+'</div></div>';
-      if(mine.length)h+='<div class="xyws-cards">'+mine.map(function(w){return card(w,null,{canDelete:xywsCanDeleteCloud(w)});}).join('')+'</div>';
+      h+='<div class="xyws-panel"><h4>我的作品 · '+mine.length+'</h4><div class="xyws-muted">'+(xywsManageLoaded?'已按服务器 ownership 同步当前账号的云端作品；自己的云端作品可直接编辑，本机草稿可直接上传。':'正在同步服务器 ownership；同步完成后会显示自己云端作品的编辑 / 删除入口。')+'</div></div>';
+      if(mine.length)h+='<div class="xyws-cards">'+mine.map(function(w){var localOnly=!w.xywsCloud&&String(w.id||'').indexOf('mine_')===0;return card(w,null,{canDelete:xywsCanDeleteCloud(w),canEdit:xywsCanEditCloud(w),canUpload:localOnly});}).join('')+'</div>';
       if(!xywsManageLoaded&&!xywsManageLoading)setTimeout(function(){xywsSyncManage(false);},0);
-      h+='<div class="xyws-panel"><h4>本地导入作品 · '+imported.length+'</h4><div class="xyws-muted">'+(imported.length?'这些作品来自标准作品包；点击后会按人物、生灵、开局、规则、玩法、装束、能力或物品对应路由安装。':'还没有导入外部作品包。')+'</div></div>';
-      if(imported.length)h+='<div class="xyws-cards">'+imported.map(function(w){return card(w);}).join('')+'</div>';
+      h+='<div class="xyws-panel"><h4>本地导入作品 · '+imported.length+'</h4><div class="xyws-muted">'+(imported.length?'这些作品可能来自星海工坊作品包或 SillyTavern 世界书。可先查看 / 安装，也可点“上传云端”，发布前还能重新选择栏目并修改名称、简介与内容。':'还没有导入外部 JSON。')+'</div></div>';
+      if(imported.length)h+='<div class="xyws-cards">'+imported.map(function(w){return card(w,null,{canUpload:true});}).join('')+'</div>';
       $('[data-mine]').innerHTML=h;
     }
 
@@ -952,7 +1074,7 @@
     function parseRules(){try{var a=JSON.parse(getLS('xysb_world_rules','[]')),scope=xywsScopeId();return Array.isArray(a)?a.filter(function(r){return r&&(!r.xywsScope||r.xywsScope===scope);}):[];}catch(e){return[];}}
 
     function pubSource(type){
-      if(type==='角色档案')return parseProfiles().map(function(p){return {id:p.id||p.name,label:p.name||'未命名档案',value:p};});
+      if(type==='角色')return parseProfiles().map(function(p){return {id:p.id||p.name,label:p.name||'未命名档案',value:p};});
       if(type==='开局'){var s=parseCurrent(),r=String(s.route||'').trim();return r?[{id:'current_route',label:r.slice(0,40),value:r}]:[];}
       if(type==='NPC')return parseRoster().map(function(p,i){return {id:String(i),label:p.name||('人物'+(i+1)),value:p};});
       if(type==='规则')return parseRules().filter(function(r){return r&&String(r.text||'').trim();}).map(function(r,i){return {id:r.id||String(i),label:String(r.text).slice(0,45),value:r};});
@@ -964,7 +1086,7 @@
       btn.textContent = n ? ('已选择 '+n+' 项') : '选择发布内容';
     }
     function renderPick(){
-      $('[data-picktitle]').textContent = pubType==='角色档案'?'选择人物角色':(pubType==='NPC'?'选择生灵':(pubType==='规则'?'选择规则':'选择内容'));
+      $('[data-picktitle]').textContent = pubType==='角色'?'选择人物角色':(pubType==='NPC'?'选择生灵':(pubType==='规则'?'选择规则':'选择内容'));
       var multi = pubType==='规则';
       $('[data-pickhint]').textContent = multi ? '可多选，选好后点“确定”。' : '单选，选好后点“确定”。';
       var items=overlay.__xywsSources||[], pickedIds=(overlay.__xywsPickedIds||[]).map(String);
@@ -988,10 +1110,13 @@
         }
       });
       overlay.__xywsPickedIds=picked;
-      if((pubType==='角色档案'||pubType==='NPC') && picked.length && !String($('[data-pubname]').value||'').trim()){
-        var s=items.filter(function(x){return String(x.id)===picked[0];})[0];
-        var nm = (s && s.value && s.value.name) ? s.value.name : '';
-        if(nm) $('[data-pubname]').value = nm;
+      if(picked.length){
+        var chosen=items.filter(function(x){return String(x.id)===picked[0];})[0];
+        if((pubType==='NPC'||pubType==='角色')&&chosen)xywsPopulateNpcPublish(chosen.value,pubType);
+        if(pubType==='规则'){
+          var chosenRules=items.filter(function(x){return picked.indexOf(String(x.id))>=0;}).map(function(x){var v=x.value;return (v&&typeof v==='object')?String(v.text||'').trim():String(v||'').trim();}).filter(Boolean);
+          var ruleBox=$('[data-pubdesc]');if(ruleBox)ruleBox.value=chosenRules.join('\n\n');
+        }
       }
       updatePickLabel();
       show('publish');
@@ -1014,136 +1139,196 @@
         return null;
       });
     }
+    function xywsNpcRowEsc(v){return esc(String(v==null?'':v));}
+    function xywsNpcSkillRow(a,name){a=xywsNpcObj(a);return '<div class="xyws-npcrow" data-npc-skill-row><input data-f="name" placeholder="招式名称" value="'+xywsNpcRowEsc(name||'')+'"><select data-f="slot"><option>基础攻防</option><option>小技能</option><option>中技能</option><option>大技能</option><option>领域</option><option>规则级</option></select><input data-f="school" placeholder="系别" value="'+xywsNpcRowEsc(a.系别||'')+'"><input data-f="type" placeholder="类型" value="'+xywsNpcRowEsc(a.类型||'')+'"><input data-f="cost" inputmode="numeric" placeholder="蓝耗" value="'+xywsNpcRowEsc(a.蓝耗==null?'':a.蓝耗)+'"><textarea data-f="effect" placeholder="效果 / 限制">'+xywsNpcRowEsc(a.效果||'')+'</textarea><button type="button" class="xyws-npcdel" data-a="npc-del-row">删</button></div>';}
+    function xywsNpcGearRow(a,name){a=xywsNpcObj(a);return '<div class="xyws-npcrow xyws-npcrow-gear" data-npc-gear-row><input data-f="name" placeholder="星器 / 装备名称" value="'+xywsNpcRowEsc(name||'')+'"><input data-f="type" placeholder="类型" value="'+xywsNpcRowEsc(a.类型||'')+'"><select data-f="grade"><option>寻常</option><option>精良</option><option>星辉</option><option>传说</option></select><select data-f="bond"><option>初缔</option><option>相合</option><option>心意相通</option><option>星灵共鸣</option></select><textarea data-f="effect" placeholder="效果 / 特征">'+xywsNpcRowEsc(a.效果||'')+'</textarea><button type="button" class="xyws-npcdel" data-a="npc-del-row">删</button></div>';}
+    function xywsNpcItemRow(a,name){a=xywsNpcObj(a);return '<div class="xyws-npcrow xyws-npcrow-item" data-npc-item-row><input data-f="name" placeholder="物品名称" value="'+xywsNpcRowEsc(name||'')+'"><input data-f="qty" inputmode="numeric" placeholder="数量" value="'+xywsNpcRowEsc(a.数量==null?'':a.数量)+'"><input data-f="cat" placeholder="类别" value="'+xywsNpcRowEsc(a.类别||'')+'"><textarea data-f="desc" placeholder="作用 / 描述">'+xywsNpcRowEsc(a.描述||'')+'</textarea><button type="button" class="xyws-npcdel" data-a="npc-del-row">删</button></div>';}
+    function xywsNpcInjuryRow(desc,name){return '<div class="xyws-npcrow xyws-npcrow-injury" data-npc-injury-row><input data-f="name" placeholder="伤势名称 / 部位" value="'+xywsNpcRowEsc(name||'')+'"><textarea data-f="desc" placeholder="伤势描述 / 影响">'+xywsNpcRowEsc(desc||'')+'</textarea><button type="button" class="xyws-npcdel" data-a="npc-del-row">删</button></div>';}
+    function xywsNpcSetSelect(row,f,val){var el=row&&row.querySelector('[data-f="'+f+'"]');if(el&&val)el.value=String(val);}
+    function xywsNpcAppendSkill(a,name){var box=$('[data-npc-skill-list]');if(!box)return;var wrap=doc.createElement('div');wrap.innerHTML=xywsNpcSkillRow(a,name);var row=wrap.firstElementChild;box.appendChild(row);xywsNpcSetSelect(row,'slot',a&&a.档位);}
+    function xywsNpcAppendGear(a,name){var box=$('[data-npc-gear-list]');if(!box)return;var wrap=doc.createElement('div');wrap.innerHTML=xywsNpcGearRow(a,name);var row=wrap.firstElementChild;box.appendChild(row);xywsNpcSetSelect(row,'grade',a&&a.品阶);xywsNpcSetSelect(row,'bond',a&&a.契合);}
+    function xywsNpcAppendItem(a,name){var box=$('[data-npc-item-list]');if(!box)return;var wrap=doc.createElement('div');wrap.innerHTML=xywsNpcItemRow(a,name);box.appendChild(wrap.firstElementChild);}
+    function xywsNpcAppendInjury(desc,name){var box=$('[data-npc-injury-list]');if(!box)return;var wrap=doc.createElement('div');wrap.innerHTML=xywsNpcInjuryRow(desc,name);box.appendChild(wrap.firstElementChild);}
+    function xywsNpcField(name){var e=$('[data-npc="'+name+'"]');return e?String(e.value||'').trim():'';}
+    function xywsNpcSetField(name,v){var e=$('[data-npc="'+name+'"]');if(e)e.value=(v==null?'':v);}
+    function xywsNpcReadPublish(){
+      var kind=xywsNpcField('kind')||'other',name=xywsNpcField('name');if(!name)return {ok:false,msg:'请填写人物姓名'};
+      var rec=xywsSanitizeNpcRecord({
+        档案:{姓名:name,代号:xywsNpcField('alias'),性别:xywsNpcField('gender'),种族:xywsNpcField('race')||xywsNpcRaceForKind(kind),真实年龄:xywsNpcNum(xywsNpcField('realAge'),0),表观年龄:xywsNpcNum(xywsNpcField('apparentAge'),0),身份:xywsNpcField('identity'),阵营:xywsNpcField('camp'),能力系别:xywsNpcField('school'),亲和体质:xywsNpcField('affinity'),契龄:xywsNpcNum(xywsNpcField('contractAge'),0),外貌:xywsNpcField('look')},
+        战力:{等级:xywsNpcNum(xywsNpcField('level'),0),经验:xywsNpcNum(xywsNpcField('exp'),0),层级声明:xywsNpcField('tier')},
+        状态:{生命:xywsNpcField('hp')===''?100:xywsNpcNum(xywsNpcField('hp'),100),魔力:xywsNpcField('mp')===''?(kind==='mortal'?0:100):xywsNpcNum(xywsNpcField('mp'),0),情欲:xywsNpcNum(xywsNpcField('arousal'),0),变身:xywsNpcField('form')||'日常态',战服:xywsNpcField('battlewear'),处境:xywsNpcField('situation'),战况:xywsNpcField('battleState')||'无战事',伤势:{},位置:xywsNpcField('location')},
+        侵蚀:{阶段:xywsNpcField('corruption')||'未染',侵蚀值:xywsNpcNum(xywsNpcField('corruptionValue'),0)},
+        星灵:{名号:xywsNpcField('spiritName'),本相:xywsNpcField('spiritForm'),现状:xywsNpcField('spiritStatus'),蚀相:xywsNpcField('spiritCorrupt'),言语:xywsNpcField('spiritVoice'),羁绊:xywsNpcNum(xywsNpcField('spiritBond'),0),羁绊描述:xywsNpcField('spiritRelation')},
+        躯体:{变身外观:{白描:xywsNpcField('bodyPlain'),变身装甲:xywsNpcField('bodyArmor')}},星器:{},招式:{},背包:{},金钱:xywsNpcNum(xywsNpcField('money'),0),
+        关系:{与主角关系:xywsNpcField('relation'),好感度:xywsNpcNum(xywsNpcField('favor'),0),钩子:xywsNpcField('hook'),秘密:xywsNpcField('secret'),最后出场:xywsNpcField('lastSeen')}
+      },kind);
+      $$('[data-npc-skill-row]').forEach(function(row){var n=String((row.querySelector('[data-f="name"]')||{}).value||'').trim();if(!n)return;rec.招式[n]={档位:String((row.querySelector('[data-f="slot"]')||{}).value||'基础攻防'),系别:String((row.querySelector('[data-f="school"]')||{}).value||'').trim(),类型:String((row.querySelector('[data-f="type"]')||{}).value||'').trim(),蓝耗:xywsNpcNum((row.querySelector('[data-f="cost"]')||{}).value,0),效果:String((row.querySelector('[data-f="effect"]')||{}).value||'').trim()};});
+      $$('[data-npc-gear-row]').forEach(function(row){var n=String((row.querySelector('[data-f="name"]')||{}).value||'').trim();if(!n)return;rec.星器[n]={类型:String((row.querySelector('[data-f="type"]')||{}).value||'').trim(),品阶:String((row.querySelector('[data-f="grade"]')||{}).value||'寻常'),契合:String((row.querySelector('[data-f="bond"]')||{}).value||'初缔'),效果:String((row.querySelector('[data-f="effect"]')||{}).value||'').trim()};});
+      $$('[data-npc-item-row]').forEach(function(row){var n=String((row.querySelector('[data-f="name"]')||{}).value||'').trim();if(!n)return;rec.背包[n]={数量:Math.max(1,Math.round(xywsNpcNum((row.querySelector('[data-f="qty"]')||{}).value,1))),类别:String((row.querySelector('[data-f="cat"]')||{}).value||'杂物').trim()||'杂物',描述:String((row.querySelector('[data-f="desc"]')||{}).value||'').trim()};});
+      rec.状态.伤势={};$$('[data-npc-injury-row]').forEach(function(row){var n=String((row.querySelector('[data-f="name"]')||{}).value||'').trim(),d=String((row.querySelector('[data-f="desc"]')||{}).value||'').trim();if(n)rec.状态.伤势[n]=d;});
+      return {ok:true,source:xywsNpcSourceFromRecord(rec,kind,xywsNpcField('debut')),data:{},body:xywsNpcRecordText(rec)};
+    }
+    function xywsPopulateNpcPublish(raw,workType){
+      var src=xywsNormalizeNpcSource(raw,{type:workType==='角色'?'角色':'NPC',title:(raw&&raw.name)||''}),rec=src.npc,d=rec.档案,w=rec.战力,st=rec.状态,co=rec.侵蚀,sp=rec.星灵,r=rec.关系;
+      xywsNpcSetField('kind',src.kind);xywsNpcSetField('name',d.姓名);xywsNpcSetField('alias',d.代号);xywsNpcSetField('gender',d.性别);xywsNpcSetField('race',d.种族);xywsNpcSetField('realAge',d.真实年龄||'');xywsNpcSetField('apparentAge',d.表观年龄||'');xywsNpcSetField('identity',d.身份);xywsNpcSetField('camp',d.阵营);xywsNpcSetField('school',d.能力系别);xywsNpcSetField('affinity',d.亲和体质);xywsNpcSetField('contractAge',d.契龄||'');xywsNpcSetField('look',d.外貌);xywsNpcSetField('level',w.等级||'');xywsNpcSetField('exp',w.经验||'');xywsNpcSetField('tier',w.层级声明);xywsNpcSetField('hp',st.生命);xywsNpcSetField('mp',st.魔力);xywsNpcSetField('arousal',st.情欲||'');xywsNpcSetField('form',st.变身);xywsNpcSetField('battlewear',st.战服);xywsNpcSetField('situation',st.处境);xywsNpcSetField('battleState',st.战况);xywsNpcSetField('location',st.位置);xywsNpcSetField('corruption',co.阶段);xywsNpcSetField('corruptionValue',co.侵蚀值||'');xywsNpcSetField('spiritName',sp.名号);xywsNpcSetField('spiritForm',sp.本相);xywsNpcSetField('spiritStatus',sp.现状);xywsNpcSetField('spiritCorrupt',sp.蚀相);xywsNpcSetField('spiritVoice',sp.言语);xywsNpcSetField('spiritBond',sp.羁绊||'');xywsNpcSetField('spiritRelation',sp.羁绊描述);var body=xywsNpcObj(rec.躯体).变身外观||{};xywsNpcSetField('bodyPlain',body.白描||'');xywsNpcSetField('bodyArmor',body.变身装甲||'');xywsNpcSetField('money',rec.金钱||'');xywsNpcSetField('relation',r.与主角关系);xywsNpcSetField('favor',r.好感度||'');xywsNpcSetField('hook',r.钩子);xywsNpcSetField('secret',r.秘密);xywsNpcSetField('lastSeen',r.最后出场);xywsNpcSetField('debut',src.debut||'');
+      var sb=$('[data-npc-skill-list]'),gb=$('[data-npc-gear-list]'),ib=$('[data-npc-item-list]'),hb=$('[data-npc-injury-list]');if(sb)sb.innerHTML='';if(gb)gb.innerHTML='';if(ib)ib.innerHTML='';if(hb)hb.innerHTML='';Object.keys(rec.招式||{}).forEach(function(n){xywsNpcAppendSkill(rec.招式[n],n);});Object.keys(rec.星器||{}).forEach(function(n){xywsNpcAppendGear(rec.星器[n],n);});Object.keys(rec.背包||{}).forEach(function(n){xywsNpcAppendItem(rec.背包[n],n);});Object.keys(st.伤势||{}).forEach(function(n){xywsNpcAppendInjury(st.伤势[n],n);});
+    }
+    function xywsNpcPublishHtml(){return '<div class="xyws-source">字段按 <b>/重要人物/&lt;姓名&gt;</b> 的现有合法结构分开保存。姓名用于变量键；其余项目按需填写，留空不会被硬塞进别的字段。</div><div class="xyws-field"><label>人物类型</label><select data-npc="kind"><option value="mahou">魔法少女 / 守护者</option><option value="demon">魔人 / 魔物</option><option value="mortal">凡人</option><option value="other">星灵 / 使魔 / 其他生灵</option></select></div><details class="xyws-npcsec" open><summary>基本档案</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>姓名</label><input data-npc="name"></div><div class="xyws-field"><label>代号 / 称号</label><input data-npc="alias"></div><div class="xyws-field"><label>性别</label><input data-npc="gender"></div><div class="xyws-field"><label>种族</label><input data-npc="race"></div><div class="xyws-field"><label>真实年龄</label><input data-npc="realAge" inputmode="numeric"></div><div class="xyws-field"><label>表观年龄</label><input data-npc="apparentAge" inputmode="numeric"></div><div class="xyws-field"><label>身份 / 职业</label><input data-npc="identity"></div><div class="xyws-field"><label>阵营</label><input data-npc="camp"></div><div class="xyws-field"><label>能力系别 / 本能类别</label><input data-npc="school"></div><div class="xyws-field"><label>亲和体质 / 固有特征</label><input data-npc="affinity"></div><div class="xyws-field"><label>契龄</label><input data-npc="contractAge" inputmode="numeric"></div></div><div class="xyws-field"><label>外貌</label><textarea data-npc="look"></textarea></div></details><details class="xyws-npcsec"><summary>战力与当前状态</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>层级声明</label><input data-npc="tier" placeholder="见习 / 精英 / 化渊者……"></div><div class="xyws-field"><label>等级</label><input data-npc="level" inputmode="numeric"></div><div class="xyws-field"><label>经验</label><input data-npc="exp" inputmode="numeric"></div><div class="xyws-field"><label>生命</label><input data-npc="hp" inputmode="numeric" placeholder="留空按默认状态"></div><div class="xyws-field"><label>魔力 / 能量</label><input data-npc="mp" inputmode="numeric" placeholder="留空按角色类型默认"></div><div class="xyws-field"><label>情欲</label><input data-npc="arousal" inputmode="numeric"></div><div class="xyws-field"><label>当前形态</label><select data-npc="form"><option value="日常态">日常态</option><option value="变身中">变身中</option></select></div><div class="xyws-field"><label>当前战服 / 装备</label><input data-npc="battlewear"></div><div class="xyws-field"><label>位置</label><input data-npc="location"></div><div class="xyws-field"><label>战况</label><input data-npc="battleState" placeholder="无战事"></div></div><div class="xyws-field"><label>当前处境</label><textarea data-npc="situation"></textarea></div><div class="xyws-pubgrid"><div class="xyws-field"><label>侵蚀阶段</label><select data-npc="corruption"><option value="未染">未染</option><option>初蚀</option><option>沉沦</option><option>半堕</option><option>恶堕</option></select></div><div class="xyws-field"><label>侵蚀值（选填）</label><input data-npc="corruptionValue" inputmode="numeric"></div></div><div class="xyws-source">伤势对应人物变量里的「状态.伤势」，一条伤势一个名字，不再塞进钩子或能力说明。</div><div data-npc-injury-list></div><button type="button" class="xyws-secondary xyws-npcadd" data-a="npc-add-injury">＋ 添加伤势</button></details><details class="xyws-npcsec"><summary>星灵 / 契约信息</summary><div class="xyws-source">不适用就留空。这里对应人物变量里的「星灵」模块，不拿来塞魔人的本源或其他无关设定。</div><div class="xyws-pubgrid"><div class="xyws-field"><label>星灵名号</label><input data-npc="spiritName"></div><div class="xyws-field"><label>星灵本相</label><input data-npc="spiritForm"></div><div class="xyws-field"><label>星灵现状</label><input data-npc="spiritStatus"></div><div class="xyws-field"><label>星灵蚀相</label><input data-npc="spiritCorrupt"></div><div class="xyws-field"><label>言语</label><select data-npc="spiritVoice"><option value="">未指定</option><option>可言语</option><option>不言语</option></select></div><div class="xyws-field"><label>羁绊值</label><input data-npc="spiritBond" inputmode="numeric"></div></div><div class="xyws-field"><label>羁绊描述</label><textarea data-npc="spiritRelation"></textarea></div></details><details class="xyws-npcsec"><summary>外观与形态</summary><div class="xyws-field"><label>日常 / 本体白描</label><textarea data-npc="bodyPlain"></textarea></div><div class="xyws-field"><label>变身 / 显形装束</label><textarea data-npc="bodyArmor"></textarea></div></details><details class="xyws-npcsec"><summary>能力 / 招式</summary><div data-npc-skill-list></div><button type="button" class="xyws-secondary xyws-npcadd" data-a="npc-add-skill">＋ 添加招式</button></details><details class="xyws-npcsec"><summary>星器</summary><div class="xyws-source">这里只写现有「星器」变量。普通武装 / 战服请写在上面的「当前战服 / 装备」，不要为了有格子就塞进星器。</div><div data-npc-gear-list></div><button type="button" class="xyws-secondary xyws-npcadd" data-a="npc-add-gear">＋ 添加星器</button></details><details class="xyws-npcsec"><summary>背包 / 持有物</summary><div data-npc-item-list></div><button type="button" class="xyws-secondary xyws-npcadd" data-a="npc-add-item">＋ 添加物品</button><div class="xyws-field"><label>金钱</label><input data-npc="money" inputmode="numeric"></div></details><details class="xyws-npcsec" open><summary>关系与登场</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>与主角关系</label><input data-npc="relation"></div><div class="xyws-field"><label>好感度</label><input data-npc="favor" inputmode="numeric"></div><div class="xyws-field"><label>最后出场</label><input data-npc="lastSeen"></div><div class="xyws-field"><label>登场安排（分享元数据）</label><input data-npc="debut" placeholder="仅登记 / 自然安排 / 尽快登场 / 自定义"></div></div><div class="xyws-field"><label>钩子</label><textarea data-npc="hook"></textarea></div><div class="xyws-field"><label>秘密</label><textarea data-npc="secret"></textarea></div></details>';}
     function xywsRenderPublishExtra(type){
       var box=$('[data-pubextra]');if(!box)return;var h='';
-      if(type==='装束')h='<div class="xyws-field"><label>变身装束 / 装甲描述</label><textarea data-outfit-desc placeholder="直接描述变身后的服装、装甲、武装、标志物或整体外观。需要分部位时可自行在文本里分。"></textarea></div>';
-      else if(type==='能力')h='<div class="xyws-pubgrid"><div class="xyws-field"><label>招式名称（选填）</label><input data-ability-name placeholder="留空时，安装会交给 AI 补名"></div><div class="xyws-field"><label>档位</label><select data-ability-slot><option>基础攻防</option><option>小技能</option><option>中技能</option><option>大技能</option><option>领域</option><option>规则级</option></select></div><div class="xyws-field"><label>系别 / 本能类别</label><input data-ability-school placeholder="空间系、特殊系·空间、蚀心·精神……都可以"></div><div class="xyws-field"><label>类型（选填 · 自由填写）</label><input data-ability-type placeholder="攻击、反击、位移、结界展开……按实际作用写"></div><div class="xyws-field"><label>蓝耗</label><input data-ability-cost type="number" inputmode="numeric" value="0"></div></div><div class="xyws-source">蓝耗按现有系统档位校验：基础 0–8｜小 20–50｜中 110–180｜大 360–520｜领域 1000–1500｜规则级 2800–4200。类型不是固定分类，可自由填写。</div><div class="xyws-field"><label>效果 / 能力说明</label><textarea data-ability-effect placeholder="写清能力如何发动、实际效果、限制或边界。"></textarea></div>';
+      if(type==='NPC'||type==='角色')h=xywsNpcPublishHtml();
+      else if(type==='装束')h='<div class="xyws-field"><label>变身装束 / 装甲描述</label><textarea data-outfit-desc placeholder="直接描述变身后的服装、装甲、武装、标志物或整体外观。需要分部位时可自行在文本里分。"></textarea></div>';
+      else if(type==='能力')h='<div class="xyws-pubgrid"><div class="xyws-field"><label>招式名称（选填）</label><input data-ability-name placeholder="留空时，安装会交给 AI 补名"></div><div class="xyws-field"><label>档位</label><select data-ability-slot><option>基础攻防</option><option>小技能</option><option>中技能</option><option>大技能</option><option>领域</option><option>规则级</option></select></div><div class="xyws-field"><label>系别 / 本能类别</label><input data-ability-school placeholder="空间系、特殊系·空间、蚀心·精神……都可以"></div><div class="xyws-field"><label>类型（选填 · 自由填写）</label><input data-ability-type placeholder="攻击、反击、位移、结界展开……按实际作用写"></div><div class="xyws-field"><label>蓝耗</label><input data-ability-cost type="number" inputmode="numeric" value="0"></div></div><div class="xyws-source">蓝耗按现有系统档位校验：基础 0–8｜小 20–50｜中 110–180｜大 360–520｜领域 1000–1500｜规则级 2800–4200。</div><div class="xyws-field"><label>效果 / 能力说明</label><textarea data-ability-effect placeholder="写清能力如何发动、实际效果、限制或边界。"></textarea></div>';
       else if(type==='物品')h='<div class="xyws-pubgrid"><div class="xyws-field"><label>类别（可自定义）</label><input data-item-category placeholder="材料、消耗品、钥匙、纪念物……随你写"></div><div class="xyws-field"><label>默认数量</label><input data-item-qty type="number" inputmode="numeric" min="1" value="1"></div></div><div class="xyws-field"><label>作用 / 描述</label><textarea data-item-desc placeholder="自由填写用途、效果、来历或使用方式；不受世界书现有物品名限制。"></textarea></div>';
       box.innerHTML=h;
     }
     function xywsReadPublishExtra(type){
-      if(type==='装束'){
-        var d=String(($('[data-outfit-desc]')||{}).value||'').trim();return d?{ok:true,data:{outfit:{description:d}},body:d}:{ok:false,msg:'请填写变身装束 / 装甲描述'};
-      }
+      if(type==='NPC'||type==='角色')return xywsNpcReadPublish();
+      if(type==='装束'){var d=String(($('[data-outfit-desc]')||{}).value||'').trim();return d?{ok:true,data:{outfit:{description:d}},body:d}:{ok:false,msg:'请填写变身装束 / 装甲描述'};}
       if(type==='能力'){
         var name=String(($('[data-ability-name]')||{}).value||'').trim(),slot=String(($('[data-ability-slot]')||{}).value||''),school=String(($('[data-ability-school]')||{}).value||'').trim(),stype=String(($('[data-ability-type]')||{}).value||'').trim(),effect=String(($('[data-ability-effect]')||{}).value||'').trim(),raw=String(($('[data-ability-cost]')||{}).value||'').trim(),cost=Number(raw),rg=XYWS_SKILL_COST_RANGES[slot];
-        if(XYWS_SKILL_SLOTS.indexOf(slot)<0)return {ok:false,msg:'请选择有效的能力档位'};
-        if(!school)return {ok:false,msg:'请填写系别 / 本能类别'};
-        if(raw===''||!Number.isFinite(cost)||Math.round(cost)!==cost)return {ok:false,msg:'请填写整数蓝耗'};
-        if(!rg||cost<rg[0]||cost>rg[1])return {ok:false,msg:slot+'蓝耗应为 '+rg[0]+'～'+rg[1]};
-        if(!effect)return {ok:false,msg:'请填写效果 / 能力说明'};
+        if(XYWS_SKILL_SLOTS.indexOf(slot)<0)return {ok:false,msg:'请选择有效的能力档位'};if(!school)return {ok:false,msg:'请填写系别 / 本能类别'};if(raw===''||!Number.isFinite(cost)||Math.round(cost)!==cost)return {ok:false,msg:'请填写整数蓝耗'};if(!rg||cost<rg[0]||cost>rg[1])return {ok:false,msg:slot+'蓝耗应为 '+rg[0]+'～'+rg[1]};if(!effect)return {ok:false,msg:'请填写效果 / 能力说明'};
         var a={skillName:name,slot:slot,school:school,skillType:stype,mpCost:cost,effect:effect},tmp={type:'能力',ability:a};return {ok:true,data:{ability:a},body:xywsWorkBody(tmp)};
       }
       if(type==='物品'){
-        var cat=String(($('[data-item-category]')||{}).value||'').trim()||'杂物',rawq=String(($('[data-item-qty]')||{}).value||'').trim(),qty=Number(rawq),desc=String(($('[data-item-desc]')||{}).value||'').trim();
-        if(rawq===''||!Number.isFinite(qty)||Math.round(qty)!==qty||qty<1)return {ok:false,msg:'物品数量必须是大于 0 的整数'};
-        if(!desc)return {ok:false,msg:'请填写物品的作用 / 描述'};
-        var it={category:cat,quantity:qty,description:desc},tmp2={type:'物品',item:it};return {ok:true,data:{item:it},body:xywsWorkBody(tmp2)};
+        var cat=String(($('[data-item-category]')||{}).value||'').trim()||'杂物',rawq=String(($('[data-item-qty]')||{}).value||'').trim(),qty=Number(rawq),desc=String(($('[data-item-desc]')||{}).value||'').trim();if(rawq===''||!Number.isFinite(qty)||Math.round(qty)!==qty||qty<1)return {ok:false,msg:'物品数量必须是大于 0 的整数'};if(!desc)return {ok:false,msg:'请填写物品的作用 / 描述'};var it={category:cat,quantity:qty,description:desc},tmp2={type:'物品',item:it};return {ok:true,data:{item:it},body:xywsWorkBody(tmp2)};
       }
       return {ok:true,data:{},body:''};
     }
-
+    function xywsExcerpt(v,n){var s=String(v||'').replace(/\s+/g,' ').trim();return s.length>(n||120)?s.slice(0,(n||120)-1)+'…':s;}
+    function xywsPublishTitle(type,picked,ex){
+      var typed=String(($('[data-pubname]')||{}).value||'').trim();if(type==='角色'||type==='NPC')return String(ex.source&&ex.source.npc&&ex.source.npc.档案&&ex.source.npc.档案.姓名||typed||'').trim();
+      if(type==='能力'){var a=ex.data.ability||{};return String(a.skillName||('未命名招式 · '+(a.school||'未定系别')+' · '+(a.slot||'未定档位'))).slice(0,120);}
+      if(type==='装束')return typed||('变身装束 · '+xywsExcerpt(ex.body,18));
+      if(type==='物品')return typed;
+      if(type==='开局')return typed||xywsExcerpt(picked[0]||'',28)||'未命名开局';
+      if(type==='规则'){var rr=picked[0];return typed||('规则 · '+xywsExcerpt(rr&&rr.text?rr.text:rr,24));}
+      if(type==='玩法')return typed||'未命名玩法';return typed||'未命名作品';
+    }
+    function xywsAutoSummary(type,title,picked,ex){
+      if(type==='NPC'||type==='角色'){var r=ex.source.npc,d=r.档案,rel=r.关系;return xywsExcerpt([d.种族,d.身份,d.阵营,d.能力系别,rel.与主角关系,d.外貌].filter(Boolean).join(' · '),220);}
+      if(type==='能力'){var a=ex.data.ability||{};return xywsExcerpt([a.slot,a.school,a.skillType,a.mpCost!==undefined?('蓝耗 '+a.mpCost):'',a.effect].filter(Boolean).join(' · '),220);}
+      if(type==='物品'){var it=ex.data.item||{};return xywsExcerpt([it.category,'×'+(it.quantity||1),it.description].filter(Boolean).join(' · '),220);}
+      return xywsExcerpt(ex.body||(picked&&picked[0]&&picked[0].text)||picked&&picked[0]||title,220);
+    }
+    function xywsConfigurePublishChrome(type){
+      var nw=$('[data-pubname-wrap]'),dw=$('[data-pubdesc-wrap]'),nl=$('[data-pubnamelabel]'),dl=$('[data-pubdesclabel]');if(nw)nw.style.display='';if(dw)dw.style.display=(type==='玩法'||type==='开局'||type==='规则')?'':'none';if(nl)nl.textContent='作品名称';if(dl)dl.textContent='内容 / 正文';
+      if(type==='角色'||type==='NPC'||type==='能力'){if(nw)nw.style.display='none';}
+      else if(type==='物品'){if(nl)nl.textContent='物品名称';}
+      else if(type==='装束'){if(nl)nl.textContent='装束名称（选填）';}
+      else if(type==='开局'){if(nl)nl.textContent='开局名称（选填）';}
+      else if(type==='规则'){if(nl)nl.textContent='规则名称（选填）';}
+      else if(type==='玩法'){if(nl)nl.textContent='玩法名称';}
+      if(dl){if(type==='玩法')dl.textContent='玩法内容';else if(type==='开局')dl.textContent='开局正文';else if(type==='规则')dl.textContent='规则正文';}
+    }
     function openPublish(type){
-      pubType=type;
-      var needsPicker = type==='角色档案'||type==='NPC'||type==='规则';
-      overlay.__xywsSources = needsPicker ? pubSource(type) : [];
-      overlay.__xywsPickedIds = [];
-      var title = type==='角色档案'?'发布人物角色':(type==='NPC'?'发布生灵':(type==='开局'?'发布开局':(type==='玩法'?'创建玩法':(type==='装束'?'发布变身装束':(type==='能力'?'发布能力 / 招式':(type==='物品'?'发布物品':'发布'+type))))));
-      $('[data-pubtitle]').textContent=title;
-      $('[data-pubhint]').textContent = type==='玩法'
-        ? '用自然语言描述你想怎么玩。'
-        : (type==='开局'
-          ? '将当前开场剧情作为开局内容发布，作品名称可自行修改。'
-          : (type==='装束'
-            ? '作品只保存变身后的外观描述，不增加攻击、防御、耐久或部位系统。'
-            : (type==='能力'
-              ? '按现有招式变量结构填写；招式名称可留空，安装时由 AI 补名。'
-              : (type==='物品'
-                ? '物品类别与作用可以自由填写，不要求世界书中预先存在。'
-                : '填写作品名称与介绍，并通过“选择发布内容”指定要分享的内容。'))));
-      var pickBtn=$('[data-pickbtn]');if(pickBtn)pickBtn.style.display=needsPicker?'':'none';
-      var dl=$('[data-pubdesclabel]');if(dl)dl.textContent=(type==='玩法'?'玩法内容':((type==='装束'||type==='能力'||type==='物品')?'简单介绍（可选）':'简单介绍 / 内容'));
-      $('[data-pubtags]').value='';xywsRenderPublishExtra(type);
-      if(type==='开局'){
-        var cur=parseCurrent(),r=String((cur&&cur.route)||'').trim();if(!r){toast('当前没有可发布的开局');show('create');return;}
-        overlay.__xywsSources=[{id:'current_route',label:r,value:r}];overlay.__xywsPickedIds=['current_route'];$('[data-pubname]').value=r.slice(0,40);$('[data-pubdesc]').value='';
-      }else if(type==='玩法'){
-        $('[data-pubname]').value='我的新玩法';$('[data-pubdesc]').value='我想让玩家体验……\n\n玩家平时可以……\n\n可能遇到的人……\n\n可能发生的事件……\n\nAI应该遵守……';
-      }else{
-        $('[data-pubname]').value=(type==='规则')?'我的规则':'';$('[data-pubdesc]').value='';
-      }
+      pubType=type;xywsPublishMode='create';xywsEditingWork=null;var needsPicker=type==='角色'||type==='NPC'||type==='规则';overlay.__xywsSources=needsPicker?pubSource(type):[];overlay.__xywsPickedIds=[];overlay.__xywsImportSeed=null;
+      var title=type==='角色'?'发布人物角色':(type==='NPC'?'发布生灵 / 人物':(type==='开局'?'发布开局':(type==='玩法'?'创建玩法':(type==='装束'?'发布变身装束':(type==='能力'?'发布能力 / 招式':(type==='物品'?'发布物品':'发布'+type))))));$('[data-pubtitle]').textContent=title;
+      $('[data-pubhint]').textContent=(type==='NPC'||type==='角色')?'人物字段按现有重要人物变量拆开；可以从已有名册载入后继续修改，也可以直接从空白开始。简介可留空，工坊会自动补。':(type==='玩法'?'写玩法正文；简介可自己写，也可以留空自动生成。':(type==='开局'?'当前开场路线会带入正文；简介可留空自动生成。':(type==='装束'?'装束正文可以写得很细；简介用于卡片快速浏览，留空会自动截取生成。':(type==='能力'?'直接填写招式字段；简介可留空自动生成。':(type==='物品'?'直接填写物品字段；简介可留空自动生成。':'规则正文可编辑；简介可留空自动生成。')))));
+      var pickBtn=$('[data-pickbtn]');if(pickBtn){pickBtn.style.display=needsPicker?'':'none';pickBtn.textContent=type==='NPC'?'从开局名册载入（可选）':'选择发布内容';}
+      var typeWrap=$('[data-pubtype-wrap]');if(typeWrap)typeWrap.hidden=true;var pbtn=$('[data-publish-btn]');if(pbtn)pbtn.textContent='发布到云端';
+      xywsConfigurePublishChrome(type);$('[data-pubname]').value='';$('[data-pubsummary]').value='';$('[data-pubdesc]').value='';$('[data-pubtags]').value='';xywsRenderPublishExtra(type);
+      if(type==='开局'){var cur=parseCurrent(),r=String((cur&&cur.route)||'').trim();if(!r){toast('当前没有可发布的开局');show('create');return;}overlay.__xywsSources=[{id:'current_route',label:r,value:r}];overlay.__xywsPickedIds=['current_route'];$('[data-pubname]').value='';$('[data-pubdesc]').value=r;}
+      else if(type==='玩法'){$('[data-pubname]').value='我的新玩法';$('[data-pubdesc]').value='我想让玩家体验……\n\n玩家平时可以……\n\n可能遇到的人……\n\n可能发生的事件……\n\nAI应该遵守……';}
+      else if(type==='规则')$('[data-pubname]').value='';
       updatePickLabel();show('publish');
     }
-    function publishLocal(){
-      var title=String($('[data-pubname]').value||'').trim(),desc=String($('[data-pubdesc]').value||'').trim(),tags=String($('[data-pubtags]').value||'').split(/[，,]/).map(function(x){return x.trim();}).filter(Boolean);if(!title){toast('先填写作品名称');return;}
-      var type=pubType==='角色档案'?'角色':pubType,sources=overlay.__xywsSources||[],pickedIds=(overlay.__xywsPickedIds||[]).map(String),picked=sources.filter(function(s){return pickedIds.indexOf(String(s.id))>=0;}).map(function(s){return s.value;});
-      if((type==='角色'||type==='NPC'||type==='规则'||type==='开局')&&!picked.length){toast('请选择要分享的内容');return;}
-      var ex=xywsReadPublishExtra(type);if(!ex.ok){toast(ex.msg);return;}
-      var work={id:'mine_'+Date.now(),xywsProtocol:XYWS_PACKAGE_VERSION,type:type,icon:ICON[type]||'✦',title:title,desc:desc,body:ex.body||desc,tags:tags,likes:0,uses:0,source:picked,created:Date.now()};Object.keys(ex.data||{}).forEach(function(k){work[k]=ex.data[k];});
-      var mine=arr(LS_MINE);mine.unshift(work);setLS(LS_MINE,JSON.stringify(mine));toast('已保存本地测试作品，可在“我的”里查看并安装');setTimeout(function(){show('mine');},350);
+    function xywsSplitRuleText(v){var s=String(v||'').trim();if(!s)return [];var a=s.split(/\n\s*\n+/).map(function(x){return x.trim();}).filter(Boolean);return a.length?a:[s];}
+    function xywsCollectPublishDraft(){
+      var type=pubType,sources=overlay.__xywsSources||[],pickedIds=(overlay.__xywsPickedIds||[]).map(String),picked=sources.filter(function(x){return pickedIds.indexOf(String(x.id))>=0;}).map(function(x){return x.value;});
+      var ex=xywsReadPublishExtra(type);if(!ex.ok)return ex;if(type==='NPC'||type==='角色')picked=[ex.source];var title=xywsPublishTitle(type,picked,ex);if((type==='NPC'||type==='角色')&&!title)return {ok:false,msg:'请填写人物姓名'};if(type==='物品'&&!title)return {ok:false,msg:'请填写物品名称'};if(type==='玩法'&&!title)return {ok:false,msg:'请填写玩法名称'};
+      var tags=String($('[data-pubtags]').value||'').split(/[，,]/).map(function(x){return x.trim();}).filter(Boolean),body='',source=picked;
+      var isWorldbookUpload=xywsPublishMode==='import-upload'&&xywsEditingWork&&xywsEditingWork.xywsImportFormat==='sillytavern.worldbook';
+      if(type==='玩法'||type==='开局'||type==='规则'){
+        var rawBody=String($('[data-pubdesc]').value||'');body=isWorldbookUpload?rawBody:rawBody.trim();
+      }else if(ex.body)body=ex.body;
+      if(type==='玩法'&&!String(body).trim())return {ok:false,msg:'请填写玩法内容'};if(type==='开局'&&!String(body).trim())return {ok:false,msg:'请填写开局正文'};if(type==='规则'&&!String(body).trim())return {ok:false,msg:'请填写规则正文'};
+      if(type==='规则')source=isWorldbookUpload?[{id:'draft_rule_raw',text:body,on:true,xywsPreserveRaw:true}]:xywsSplitRuleText(body).map(function(x,i){return {id:'draft_rule_'+i,text:x,on:true};});else if(type==='开局')source=[body];
+      var typedSummary=String(($('[data-pubsummary]')||{}).value||'').trim(),work={id:'draft_'+Date.now(),xywsProtocol:XYWS_PACKAGE_VERSION,type:type,icon:ICON[type]||'✦',title:title,desc:typedSummary,body:body,tags:tags,likes:0,uses:0,source:source,created:Date.now()};Object.keys(ex.data||{}).forEach(function(k){work[k]=ex.data[k];});
+      if(isWorldbookUpload&&(type==='角色'||type==='NPC')){var rawEl=$('[data-import-raw-content]');work.body=rawEl?String(rawEl.value||''):String(xywsEditingWork.xywsRawContent||'');work.xywsRawContent=work.body;}
+      if(xywsEditingWork&&xywsPublishMode==='cloud-edit'){work.id='cloud:'+String(xywsEditingWork.xywsOriginId||'');work.xywsCloud=true;work.xywsOriginId=String(xywsEditingWork.xywsOriginId||'');work.xywsAuthor=String(xywsEditingWork.xywsAuthor||'');work.created=xywsEditingWork.created||work.created;work.likes=Number(xywsEditingWork.likes)||0;work.uses=Number(xywsEditingWork.uses)||0;}
+      xywsEnsureSummary(work);return {ok:true,work:work};
     }
-    // 正式云端发布（阶段 3.3-A）：复用 publishLocal 的 draft 构建逻辑 →
-    // XYWS Package v1 canonical → cloud-write.publishWork → 服务器确认成功后写本地镜像。
-    // 云端失败绝不偷偷降级为本地成功。
-    function publishCloud(){
-      var title=String($('[data-pubname]').value||'').trim(),desc=String($('[data-pubdesc]').value||'').trim(),tags=String($('[data-pubtags]').value||'').split(/[，,]/).map(function(x){return x.trim();}).filter(Boolean);if(!title){toast('先填写作品名称');return;}
-      var type=pubType==='角色档案'?'角色':pubType,sources=overlay.__xywsSources||[],pickedIds=(overlay.__xywsPickedIds||[]).map(String),picked=sources.filter(function(s){return pickedIds.indexOf(String(s.id))>=0;}).map(function(s){return s.value;});
-      if((type==='角色'||type==='NPC'||type==='规则'||type==='开局')&&!picked.length){toast('请选择要分享的内容');return;}
-      var ex=xywsReadPublishExtra(type);if(!ex.ok){toast(ex.msg);return;}
-      var draft={id:'draft_'+Date.now(),xywsProtocol:XYWS_PACKAGE_VERSION,type:type,icon:ICON[type]||'✦',title:title,desc:desc,body:ex.body||desc,tags:tags,likes:0,uses:0,source:picked,created:Date.now()};Object.keys(ex.data||{}).forEach(function(k){draft[k]=ex.data[k];});
-      var canonical=null;
-      try{canonical=xywsCanonicalWork(draft);}catch(e){toast('作品内容构建失败');return;}
-      var A=xywsAuthApi();
-      var prof=(A&&typeof A.getDiscordProfile==='function')?A.getDiscordProfile():null;
-      var displayName=(prof&&(prof.global_name||prof.username))?String(prof.global_name||prof.username).trim():'';
-      var avatar='';
-      if(prof&&prof.id&&prof.avatar){
-        avatar='https://cdn.discordapp.com/avatars/'+encodeURIComponent(prof.id)+'/'+encodeURIComponent(prof.avatar)+'.png?size=128';
+    function xywsRemapImportedWork(seed,targetType){
+      seed=xywsClone(seed)||{};if(seed.type===targetType)return seed;
+      var hasRaw=typeof seed.xywsRawContent==='string',raw=hasRaw?seed.xywsRawContent:String(xywsWorkBody(seed)||''),title=String(seed.title||'未命名作品').trim()||'未命名作品';
+      var w={id:seed.id||('import_'+Date.now()),xywsImported:true,xywsImportFormat:String(seed.xywsImportFormat||''),xywsAuthor:String(seed.xywsAuthor||''),type:targetType,icon:ICON[targetType]||'✦',title:title,desc:String(seed.desc||''),tags:Array.isArray(seed.tags)?seed.tags.slice():[],likes:Number(seed.likes)||0,uses:Number(seed.uses)||0,created:seed.created||Date.now(),body:raw,source:[]};
+      if(hasRaw)w.xywsRawContent=raw;
+      if(targetType==='角色'||targetType==='NPC'){
+        var pk=targetType==='角色'?'mahou':'other',pr=xywsSanitizeNpcRecord({档案:{姓名:title,种族:targetType==='角色'?'魔法少女':'异种生命',身份:''},关系:{与主角关系:'',钩子:'',秘密:''}},pk);w.source=[xywsNpcSourceFromRecord(pr,pk,'')];
       }
-      var CW=(typeof window!=='undefined'&&window.__XYWS_CLOUD_WRITE__)?window.__XYWS_CLOUD_WRITE__:null;
-      try{ if(!CW&&typeof globalThis!=='undefined')CW=globalThis.__XYWS_CLOUD_WRITE__; }catch(e){}
-      if(!CW||typeof CW.publishWork!=='function'){toast('云端发布模块未加载');return;}
-      var btn=$('[data-a="publish"]');
-      if(btn){btn.disabled=true;btn.textContent='发布中…';}
-      Promise.resolve(CW.publishWork(canonical,{displayName:displayName,avatar:avatar})).then(function(serverWork){
-        // 只有服务器确认成功后才允许本机镜像（去重）
-        var mine=arr(LS_MINE);
-        var exists=mine.some(function(m){return m&&(m.xywsOriginId===serverWork.id||m.id==='cloud:'+serverWork.id);});
-        if(!exists){
-          var mirror=xywsClone(draft)||{};
-          mirror.id='cloud:'+serverWork.id;
-          mirror.xywsCloud=true;
-          mirror.xywsOriginId=serverWork.id;
-          mirror.xywsAuthor=(serverWork.author&&serverWork.author.displayName)?serverWork.author.displayName:'';
-          if(serverWork.createdAt)mirror.created=serverWork.createdAt;
-          mirror.xywsImported=false;
-          mine.unshift(mirror);
-          setLS(LS_MINE,JSON.stringify(mine));
+      else if(targetType==='开局'){w.source=String(raw).trim()?[raw]:[];}
+      else if(targetType==='规则'){w.source=hasRaw?[{id:'import_rule_raw',text:raw,on:true,xywsPreserveRaw:true}]:xywsSplitRuleText(raw).map(function(x,i){return {id:'import_rule_'+i,text:x,on:true};});}
+      else if(targetType==='装束'){w.outfit={description:raw};}
+      else if(targetType==='能力'){w.ability={skillName:title,slot:'基础攻防',school:'未分类',skillType:'',mpCost:0,effect:raw};}
+      else if(targetType==='物品'){w.item={category:hasRaw?'世界书导入':'导入作品',quantity:1,description:raw};}
+      xywsEnsureSummary(w);return w;
+    }
+    function xywsPopulatePublishFromWork(w,mode){
+      if(!w)return;xywsPublishMode=mode||'import-upload';xywsEditingWork=w;pubType=w.type;overlay.__xywsSources=[];overlay.__xywsPickedIds=[];
+      var typeWrap=$('[data-pubtype-wrap]'),typeSel=$('[data-pubtype]');if(typeWrap)typeWrap.hidden=xywsPublishMode!=='import-upload';if(typeSel)typeSel.value=pubType;
+      var title=xywsPublishMode==='cloud-edit'?'编辑我的作品':'导入作品上传';$('[data-pubtitle]').textContent=title;$('[data-pubhint]').textContent=xywsPublishMode==='cloud-edit'?'修改后保存到原云端作品，不需要先删除。简介仍可留空自动生成。':'发布前可修改栏目、名称、简介、正文和结构化字段；不会把导入内容强制当成玩法。';
+      var pickBtn=$('[data-pickbtn]');if(pickBtn)pickBtn.style.display='none';xywsConfigurePublishChrome(pubType);xywsRenderPublishExtra(pubType);
+      $('[data-pubname]').value=String(w.title||'');$('[data-pubsummary]').value=String(w.desc||'');$('[data-pubtags]').value=(w.tags||[]).join('，');$('[data-pubdesc]').value='';
+      if(pubType==='玩法')$('[data-pubdesc]').value=String(w.body||'');
+      else if(pubType==='开局')$('[data-pubdesc]').value=xywsOpeningText(w);
+      else if(pubType==='规则')$('[data-pubdesc]').value=xywsRuleTexts(w).join('\n\n');
+      else if(pubType==='NPC'||pubType==='角色'){
+        var ps=xywsWorkNpcSources(w);if(ps.length)xywsPopulateNpcPublish(ps[0],pubType);
+        if(xywsPublishMode==='import-upload'&&w.xywsImportFormat==='sillytavern.worldbook'){
+          var extra=$('[data-pubextra]');if(extra){var raw=typeof w.xywsRawContent==='string'?w.xywsRawContent:String(w.body||'');extra.insertAdjacentHTML('afterbegin','<div class="xyws-field"><label>世界书原文（保留，不会塞进人物字段）</label><textarea data-import-raw-content></textarea><div class="xyws-source" style="margin-top:6px">人物 / 生灵是结构化栏目。上面的原文会单独保存在作品 fallbackText；下面的人物字段请按需要补姓名、身份、关系等，不会把整段世界书偷偷塞进“钩子”或其他字段。</div></div>');var rawBox=$('[data-import-raw-content]');if(rawBox)rawBox.value=raw;}
         }
-        // 成功后强制刷新公共云端列表（复用原读取链）
-        return xywsRefreshCloud(true).then(function(works){
-          var found=false;
-          if(Array.isArray(works)){for(var i=0;i<works.length;i++){if(works[i]&&works[i].id==='cloud:'+serverWork.id){found=true;break;}}}
-          if(found){toast('已发布到云端');}else{toast('已发布到云端，列表稍后刷新');}
-          setTimeout(function(){show('home');},350);
-        },function(){
-          toast('已发布到云端，列表稍后刷新');
-          setTimeout(function(){show('home');},350);
-        });
-      }).catch(function(err){
-        // 失败：不写 LS_MINE、不自动重新 OAuth、不清空表单（可重试）
-        try{console.error('[XYWS Cloud Write] publish failed:', err&&err.message?err.message:String(err));}catch(e){}
-        toast((err&&err.message)?err.message:'发布失败，请稍后重试');
-      }).then(function(){
-        if(btn){btn.disabled=false;btn.textContent='发布到云端';}
-      });
+      }
+      else if(pubType==='装束'){var od=w.outfit||{};var oe=$('[data-outfit-desc]');if(oe)oe.value=String(od.description||w.body||'');}
+      else if(pubType==='能力'){var a=w.ability||{};var an=$('[data-ability-name]'),as=$('[data-ability-slot]'),asc=$('[data-ability-school]'),at=$('[data-ability-type]'),ac=$('[data-ability-cost]'),ae=$('[data-ability-effect]');if(an)an.value=String(a.skillName||w.title||'');if(as&&a.slot)as.value=String(a.slot);if(asc)asc.value=String(a.school||'');if(at)at.value=String(a.skillType||'');if(ac)ac.value=(a.mpCost===undefined||a.mpCost===null||Number.isNaN(Number(a.mpCost)))?'0':String(a.mpCost);if(ae)ae.value=String(a.effect||w.body||'');}
+      else if(pubType==='物品'){var it=w.item||{};var ic=$('[data-item-category]'),iq=$('[data-item-qty]'),id=$('[data-item-desc]');if(ic)ic.value=String(it.category||'');if(iq)iq.value=String(Number(it.quantity)||1);if(id)id.value=String(it.description||w.body||'');}
+      var pbtn=$('[data-publish-btn]');if(pbtn)pbtn.textContent=xywsPublishMode==='cloud-edit'?'保存修改':'发布到云端';show('publish');
+    }
+    function xywsOpenCloudEdit(w){if(!xywsCanEditCloud(w)){toast('只能编辑当前账号自己的云端作品');return;}xywsPopulatePublishFromWork(w,'cloud-edit');}
+    function xywsOpenImportedUpload(w){if(!w)return;overlay.__xywsImportSeed=xywsClone(w)||w;xywsPopulatePublishFromWork(w,'import-upload');overlay.__xywsImportSeed=xywsClone(w)||w;}
+    function xywsSwitchImportedUploadType(type){
+      if(xywsPublishMode!=='import-upload'||!overlay.__xywsImportSeed)return;var mapped=xywsRemapImportedWork(overlay.__xywsImportSeed,type);xywsPopulatePublishFromWork(mapped,'import-upload');overlay.__xywsImportSeed=overlay.__xywsImportSeed||mapped;var sel=$('[data-pubtype]');if(sel)sel.value=type;
+    }
+    function publishLocal(){var c=xywsCollectPublishDraft();if(!c.ok){toast(c.msg);return;}var work=c.work;work.id='mine_'+Date.now();var mine=arr(LS_MINE);mine.unshift(work);setLS(LS_MINE,JSON.stringify(mine));toast('已保存本地测试作品，可在“我的”里查看并安装');setTimeout(function(){show('mine');},350);}
+    function xywsUpsertLocalMirror(originId,draft,serverWork){
+      var id=String(originId||'').trim();if(!id)return;var mine=arr(LS_MINE),mirror=xywsClone(draft)||{},found=false;
+      mirror.id='cloud:'+id;mirror.xywsCloud=true;mirror.xywsOriginId=id;mirror.xywsImported=false;
+      if(serverWork&&serverWork.author&&serverWork.author.displayName)mirror.xywsAuthor=String(serverWork.author.displayName);
+      else if(serverWork&&serverWork.author_display_name)mirror.xywsAuthor=String(serverWork.author_display_name);
+      if(serverWork&&serverWork.createdAt)mirror.created=serverWork.createdAt;else if(serverWork&&serverWork.created_at)mirror.created=serverWork.created_at;
+      mine=mine.map(function(m){if(m&&(String(m.xywsOriginId||'')===id||String(m.id||'')==='cloud:'+id)){found=true;return mirror;}return m;});
+      if(!found)mine.unshift(mirror);setLS(LS_MINE,JSON.stringify(mine));
+    }
+    function publishCloud(){
+      var c=xywsCollectPublishDraft();if(!c.ok){toast(c.msg);return;}var draft=c.work,canonical=null;try{canonical=xywsCanonicalWork(draft);}catch(e){toast('作品内容构建失败');return;}
+      var A=xywsAuthApi(),prof=(A&&typeof A.getDiscordProfile==='function')?A.getDiscordProfile():null,displayName=(prof&&(prof.global_name||prof.username))?String(prof.global_name||prof.username).trim():'',avatar='';if(prof&&prof.id&&prof.avatar)avatar='https://cdn.discordapp.com/avatars/'+encodeURIComponent(prof.id)+'/'+encodeURIComponent(prof.avatar)+'.png?size=128';
+      var isEdit=xywsPublishMode==='cloud-edit',btn=$('[data-a="publish"]'),op=null,originId=isEdit&&xywsEditingWork?String(xywsEditingWork.xywsOriginId||''):'';
+      if(isEdit){
+        var M=xywsManageApi();if(!M||typeof M.updateWork!=='function'){toast('当前客户端已准备好编辑界面，但云端管理后端尚未提供更新接口');return;}
+        op=Promise.resolve(M.updateWork(originId,canonical,{displayName:displayName,avatar:avatar}));
+      }else{
+        var CW=(typeof window!=='undefined'&&window.__XYWS_CLOUD_WRITE__)?window.__XYWS_CLOUD_WRITE__:null;try{if(!CW&&typeof globalThis!=='undefined')CW=globalThis.__XYWS_CLOUD_WRITE__;}catch(e){}if(!CW||typeof CW.publishWork!=='function'){toast('云端发布模块未加载');return;}
+        op=Promise.resolve(CW.publishWork(canonical,{displayName:displayName,avatar:avatar}));
+      }
+      if(btn){btn.disabled=true;btn.textContent=isEdit?'保存中…':'发布中…';}
+      op.then(function(serverWork){
+        var sid=isEdit?originId:String(serverWork&&serverWork.id||'').trim();if(!sid)throw new Error(isEdit?'云端修改结果异常':'云端发布结果异常');
+        xywsUpsertLocalMirror(sid,draft,serverWork);
+        return Promise.all([xywsRefreshCloud(true),xywsSyncManage(true)]).then(function(){toast(isEdit?'修改已保存到云端':'已发布到云端');setTimeout(function(){show(isEdit?'mine':'home');},350);});
+      }).catch(function(err){try{console.error(isEdit?'[XYWS Manage] update failed:':'[XYWS Cloud Write] publish failed:',err&&err.message?err.message:String(err));}catch(e){}toast((err&&err.message)?err.message:(isEdit?'保存修改失败，请稍后重试':'发布失败，请稍后重试'));}).then(function(){if(btn){btn.disabled=false;btn.textContent=isEdit?'保存修改':'发布到云端';}});
     }
 
     function bindOverlay(){
       overlay.addEventListener('click',async function(e){
         var t=e.target.closest?e.target.closest('button,[data-open]'):e.target;
         if(!t)return;
-        if(t.getAttribute('data-a')==='close'){ if(currentScreen==='detail'){show(prevScreen||'home');return;} if(currentScreen==='publish'){show('create');return;} if(currentScreen==='picksource'){show('publish');return;} close(); return; }
+        if(t.getAttribute('data-a')==='close'){
+          if(currentScreen==='detail'){show(prevScreen||'home');return;}
+          if(currentScreen==='publish'){show(xywsPublishMode==='create'?'create':'mine');return;}
+          if(currentScreen==='picksource'){show('publish');return;}
+          if(currentScreen==='importmap'){xywsPendingImport=null;show('mine');return;}
+          close(); return;
+        }
         if(t.getAttribute('data-a')==='auth-login'){
           var A=xywsAuthApi();
           if(!A||typeof A.login!=='function'){toast('认证模块未加载');return;}
@@ -1210,6 +1395,8 @@
         var cat=t.getAttribute('data-cat'); if(cat){currentCat=cat;renderHome();return;}
         var more=t.getAttribute('data-more'); if(more){currentCat=more;renderHome();return;}
         var deleteId=t.getAttribute('data-delete-work');if(deleteId){var deleted=await xywsDeleteCloudWork(deleteId,t.getAttribute('data-delete-title')||'');if(deleted)renderMine();return;}
+        var editId=t.getAttribute('data-edit-work');if(editId){var ew=byId(editId);if(ew)xywsOpenCloudEdit(ew);else toast('没有找到要编辑的作品');return;}
+        var uploadId=t.getAttribute('data-upload-work');if(uploadId){var uw=byId(uploadId);if(uw)xywsOpenImportedUpload(uw);else toast('没有找到要上传的作品');return;}
         var oid=t.getAttribute('data-open'); if(oid){openDetail(oid);return;}
         var pub=t.getAttribute('data-pub'); if(pub){openPublish(pub);return;}
         if(t.hasAttribute('data-pick-open')){renderPick();show('picksource');return;}
@@ -1221,12 +1408,20 @@
         if(act==='install-opening'){await installPerson('opening');return;}
         if(act==='install-now'){await installPerson('now');return;}
         if(act==='install'){await installCurrent();return;}
-        if(act==='export-work'&&currentWork){toast(xywsExportWork(currentWork)?'作品包已导出':'导出失败');return;}
+        if(act==='export-work'&&currentWork){var exportedWork=currentWork,exported=xywsExportWork(exportedWork);if(exported)xywsTrackCloudDownload(exportedWork);toast(exported?'作品包已导出':'导出失败');return;}
+        if(act==='edit-cloud'&&currentWork){if(xywsCanEditCloud(currentWork))xywsOpenCloudEdit(currentWork);else if(currentWork.xywsImported||String(currentWork.id||'').indexOf('mine_')===0)xywsOpenImportedUpload(currentWork);else toast('只能编辑当前账号自己的云端作品');return;}
         if(act==='delete-cloud'&&currentWork&&currentWork.xywsOriginId){var oldScreen=prevScreen||'home',okdel=await xywsDeleteCloudWork(currentWork.xywsOriginId,currentWork.title);if(okdel){currentWork=null;show(oldScreen==='detail'?'home':oldScreen);}return;}
         if(act==='import-pack'){var fi=$('[data-import-file]');if(fi){fi.value='';fi.click();}return;}
+        if(act==='import-cancel'){xywsPendingImport=null;show('mine');return;}
+        if(act==='import-confirm'){xywsConfirmWorldbookImport();return;}
         if(act==='export-mine'){toast(xywsExportMine()?'已导出我的作品包':'没有可导出的作品');return;}
         if(act==='fav'&&currentWork){var on=toggleStore(LS_FAV,currentWork.id);t.textContent=on?'★ 已收藏':'☆ 收藏';toast(on?'已收藏':'已取消收藏');return;}
-        if(act==='like'&&currentWork){var on2=toggleStore(LS_LIKED,currentWork.id);t.textContent=on2?'♥ 已点赞':'♡ 点赞';toast(on2?'已点赞':'已取消点赞');return;}
+        if(act==='like'&&currentWork){if(currentWork.xywsCloud&&currentWork.xywsOriginId){await xywsToggleCloudLike(currentWork,t);return;}var on2=toggleStore(LS_LIKED,currentWork.id);t.textContent=on2?'♥ 已点赞':'♡ 点赞';toast(on2?'已点赞':'已取消点赞');return;}
+        if(act==='npc-add-skill'){xywsNpcAppendSkill({},'');return;}
+        if(act==='npc-add-gear'){xywsNpcAppendGear({},'');return;}
+        if(act==='npc-add-item'){xywsNpcAppendItem({},'');return;}
+        if(act==='npc-add-injury'){xywsNpcAppendInjury('','');return;}
+        if(act==='npc-del-row'){var row=t.closest?t.closest('.xyws-npcrow'):null;if(row)row.remove();return;}
         if(act==='publish'){publishCloud();return;}
         if(act==='pick-cancel'){ show('publish'); return; }
         if(act==='pick-done'){ confirmPick(); return; }
@@ -1234,6 +1429,7 @@
       try{win.addEventListener('focus',function(){xywsAutoSyncNow('focus');});}catch(e){}
       try{doc.addEventListener('visibilitychange',function(){if(!doc.visibilityState||doc.visibilityState==='visible')xywsAutoSyncNow('visibility');});}catch(e){}
       var q=$('[data-q]'); if(q)q.addEventListener('input',renderHome);
+      var typeSel=$('[data-pubtype]');if(typeSel)typeSel.addEventListener('change',function(){xywsSwitchImportedUploadType(String(typeSel.value||'玩法'));});
       var fi=$('[data-import-file]');if(fi)fi.addEventListener('change',function(){var f=fi.files&&fi.files[0];if(f)xywsReadImportFile(f);});
     }
 

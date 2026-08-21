@@ -1,11 +1,15 @@
 /*
  * 星海工坊 · 客户端云端作品管理 (cloud-manage.js)
  * ============================================================================
- * 阶段 3.5-A：读取当前登录用户的云端作品 + 删除作品。
+ * 阶段 3.5-A + dev.23 客户端协议：读取 / 删除 / 编辑自己的云端作品，
+ * 并为点赞与下载计数预留同一管理端点的认证动作。
  *
  * - token 只通过 __XYWS_AUTH__.getAccessToken() 获取，不直读 localStorage。
  * - GET WORKS_MANAGE_API_URL：服务端按 trusted sub 返回“我的作品”，客户端再复用 cloud.js 的 rowToWork()。
- * - DELETE WORKS_MANAGE_API_URL：body {id:<数据库作品 id>}；真正 ownership/admin 判断全部在服务端。
+ * - DELETE WORKS_MANAGE_API_URL：body {id:<数据库作品 id>}。
+ * - PATCH WORKS_MANAGE_API_URL：body {id, work, author}，只允许作品 owner 修改。
+ * - POST WORKS_MANAGE_API_URL：body {action:"like"|"download", id, ...}，用于持久点赞 / 下载计数。
+ * - ownership / admin / 计数原子性全部由服务端判断；客户端绝不提交 author_user_id。
  * - 不保存 token，不把 author_user_id 暴露给 UI。
  * ============================================================================
  */
@@ -77,7 +81,7 @@
     try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
 
     if (resp.status === 401) throw new Error('当前登录已失效，请重新登录');
-    if (resp.status === 403) throw new Error('你不能删除别人的作品');
+    if (resp.status === 403) throw new Error((data && data.error === 'Not owner') ? '只能修改自己的作品' : '你没有权限执行这个操作');
     if (resp.status === 404) throw new Error('作品已不存在');
     if (resp.status === 409) throw new Error('作品状态已变化，请刷新后重试');
     if (!resp.ok || !data || data.ok !== true) throw new Error('云端作品管理未通过');
@@ -101,7 +105,44 @@
     return { id: id, admin: data.admin === true };
   }
 
-  var API = { fetchMine: fetchMine, deleteWork: deleteWork };
+  async function updateWork(originId, work, author) {
+    var id = String(originId || '').trim();
+    if (!id) throw new Error('作品 ID 无效');
+    if (!work || typeof work !== 'object' || Array.isArray(work)) throw new Error('作品内容无效');
+    var data = await request('PATCH', { id: id, work: work, author: author || {} });
+    if (!data.work || typeof data.work !== 'object') throw new Error('云端修改结果异常');
+    var returnedId = String(data.work.id || data.id || '');
+    if (returnedId && returnedId !== id) throw new Error('云端修改结果异常');
+    return data.work;
+  }
+
+  async function setLike(originId, liked) {
+    var id = String(originId || '').trim();
+    if (!id) throw new Error('作品 ID 无效');
+    var data = await request('POST', { action: 'like', id: id, liked: liked === true });
+    if (String(data.id || '') !== id) throw new Error('云端点赞结果异常');
+    return {
+      id: id,
+      liked: data.liked === true,
+      likes: Number(data.likes) || 0
+    };
+  }
+
+  async function recordDownload(originId) {
+    var id = String(originId || '').trim();
+    if (!id) throw new Error('作品 ID 无效');
+    var data = await request('POST', { action: 'download', id: id });
+    if (String(data.id || '') !== id) throw new Error('云端下载计数结果异常');
+    return { id: id, uses: Number(data.uses) || 0 };
+  }
+
+  var API = {
+    fetchMine: fetchMine,
+    deleteWork: deleteWork,
+    updateWork: updateWork,
+    setLike: setLike,
+    recordDownload: recordDownload
+  };
   try { if (typeof window !== 'undefined') window.__XYWS_CLOUD_MANAGE__ = API; } catch (e) {}
   try { if (typeof globalThis !== 'undefined') globalThis.__XYWS_CLOUD_MANAGE__ = globalThis.__XYWS_CLOUD_MANAGE__ || API; } catch (e) {}
 })();

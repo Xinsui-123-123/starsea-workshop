@@ -176,3 +176,52 @@
 .xyws-card-actions{display:flex;gap:6px;align-items:center}
 .xyws-mini.danger,#xyws-overlay .xyws-danger{color:#f0a1b1!important;border-color:rgba(240,161,177,.28)!important;background:rgba(93,20,41,.12)!important}
 .xyws-mini.danger:hover,#xyws-overlay .xyws-danger:hover{border-color:rgba(240,161,177,.5)!important;background:rgba(93,20,41,.22)!important}
+
+/* dev.22 · 完整人物发布表单 */
+#xyws-overlay .xyws-npcsec{
+  margin:10px 0 0;border:1px solid var(--ws-edge2);border-radius:13px;
+  background:rgba(255,255,255,.014);overflow:hidden;
+}
+#xyws-overlay .xyws-npcsec>summary{
+  cursor:pointer;user-select:none;list-style:none;padding:10px 12px;
+  color:var(--ws-goldhi);font-size:11px;font-weight:700;letter-spacing:.04em;
+  background:linear-gradient(90deg,rgba(255,255,255,.028),transparent);
+  border-bottom:1px solid transparent;
+}
+#xyws-overlay .xyws-npcsec>summary::-webkit-details-marker{display:none}
+#xyws-overlay .xyws-npcsec>summary::before{content:'▸';display:inline-block;margin-right:7px;color:var(--ws-faint);transition:transform .16s ease}
+#xyws-overlay .xyws-npcsec[open]>summary{border-bottom-color:var(--ws-edge2)}
+#xyws-overlay .xyws-npcsec[open]>summary::before{transform:rotate(90deg)}
+#xyws-overlay .xyws-npcsec>summary~*{margin-left:10px;margin-right:10px}
+#xyws-overlay .xyws-npcsec>summary+*{margin-top:10px}
+#xyws-overlay .xyws-npcsec>*:last-child{margin-bottom:10px}
+#xyws-overlay .xyws-npcrow{
+  display:grid;grid-template-columns:minmax(120px,1.05fr) minmax(105px,.8fr) minmax(110px,.85fr) minmax(110px,.8fr) 76px minmax(190px,1.55fr) auto;
+  gap:6px;align-items:start;padding:8px;margin:7px 0;border:1px solid var(--ws-edge2);border-radius:11px;background:rgba(3,4,14,.36)
+}
+#xyws-overlay .xyws-npcrow-gear{grid-template-columns:minmax(135px,1fr) minmax(110px,.8fr) 92px 112px minmax(200px,1.5fr) auto}
+#xyws-overlay .xyws-npcrow-item{grid-template-columns:minmax(135px,1fr) 70px minmax(105px,.8fr) minmax(220px,1.7fr) auto}
+#xyws-overlay .xyws-npcrow-injury{grid-template-columns:minmax(140px,.8fr) minmax(260px,2fr) auto}
+#xyws-overlay .xyws-npcrow input,
+#xyws-overlay .xyws-npcrow textarea,
+#xyws-overlay .xyws-npcrow select{
+  width:100%;min-width:0;border:1px solid var(--ws-edge2)!important;border-radius:9px!important;
+  background:rgba(5,5,17,.88)!important;background-color:rgba(5,5,17,.88)!important;
+  color:#f2effb!important;outline:none!important;padding:8px 9px;font:inherit;font-size:10.5px;caret-color:#dedcff!important;
+}
+#xyws-overlay .xyws-npcrow textarea{min-height:58px;resize:vertical;line-height:1.45}
+#xyws-overlay .xyws-npcrow input::placeholder,#xyws-overlay .xyws-npcrow textarea::placeholder{color:var(--ws-faint,#716b8d)!important;opacity:1!important}
+#xyws-overlay .xyws-npcrow input:focus,#xyws-overlay .xyws-npcrow textarea:focus,#xyws-overlay .xyws-npcrow select:focus{border-color:rgba(190,184,245,.48)!important;box-shadow:0 0 0 1px rgba(185,183,240,.10)!important}
+#xyws-overlay .xyws-npcadd{margin:7px 0 10px;width:auto!important;padding:7px 11px!important;font-size:10px!important}
+#xyws-overlay .xyws-npcdel{align-self:stretch;border:1px solid rgba(240,161,177,.26);border-radius:8px;background:rgba(93,20,41,.10);color:#f0a1b1;padding:5px 8px;cursor:pointer;font-size:10px}
+#xyws-overlay .xyws-npcdel:hover{border-color:rgba(240,161,177,.5);background:rgba(93,20,41,.20)}
+@media(max-width:900px){
+  #xyws-overlay .xyws-npcrow,#xyws-overlay .xyws-npcrow-gear,#xyws-overlay .xyws-npcrow-item{grid-template-columns:1fr 1fr}
+  #xyws-overlay .xyws-npcrow textarea,#xyws-overlay .xyws-npcrow-gear textarea,#xyws-overlay .xyws-npcrow-item textarea{grid-column:1/-1}
+  #xyws-overlay .xyws-npcrow .xyws-npcdel,#xyws-overlay .xyws-npcrow-gear .xyws-npcdel,#xyws-overlay .xyws-npcrow-item .xyws-npcdel{grid-column:1/-1;justify-self:start;min-height:30px}
+}
+@media(max-width:560px){
+  #xyws-overlay .xyws-npcrow,#xyws-overlay .xyws-npcrow-gear,#xyws-overlay .xyws-npcrow-item,#xyws-overlay .xyws-npcrow-injury{grid-template-columns:1fr}
+  #xyws-overlay .xyws-npcrow textarea,#xyws-overlay .xyws-npcrow-gear textarea,#xyws-overlay .xyws-npcrow-item textarea{grid-column:auto}
+  #xyws-overlay .xyws-npcrow .xyws-npcdel,#xyws-overlay .xyws-npcrow-gear .xyws-npcdel,#xyws-overlay .xyws-npcrow-item .xyws-npcdel{grid-column:auto;width:auto}
+}

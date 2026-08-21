@@ -92,3 +92,11 @@ Discord OAuth 改为同一浏览器标签页跳转：当前 SillyTavern 标签�
 ## 阶段 3.5-A（dev.18）
 
 `/xyws/works/manage` 由独立上海 HTTP 函数提供 authenticated GET/DELETE。客户端不接触 `author_user_id`，服务端通过 CloudBase token introspect 得到可信 `sub` 后读取 ownership；普通用户只能删除 `author_user_id === sub` 的作品，管理员由 `XYWS_ADMIN_DISCORD_USER_ID` 服务端环境变量决定。
+
+
+## dev.24 / stage3.7a-r1 增量
+
+- `/xyws/works/manage` 在原 GET/DELETE 上新增 PATCH（owner 原地编辑）与 POST（like/download）。
+- `public.xyws_work_likes` 以 `(work_id,user_id)` 主键保证一个账号对同一作品最多一个赞；触发器原子维护 `xyws_works.likes`。
+- 下载量继续保存在 `xyws_works.uses`，管理后端使用带旧值条件的 PATCH compare-and-swap 重试，避免并发覆盖。
+- 客户端不提交 `author_user_id`，编辑权限仍只认服务端 introspect 的 trusted sub。

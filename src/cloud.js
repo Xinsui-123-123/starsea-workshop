@@ -44,6 +44,26 @@
     return '';
   }
 
+  function excerpt(v, n) {
+    var s = String(v || '').replace(/\s+/g, ' ').trim();
+    var max = n || 220;
+    return s.length > max ? s.slice(0, max - 1) + '…' : s;
+  }
+
+  function fallbackSummary(type, p, title) {
+    if (type === '玩法') return excerpt(p.prompt || title, 220);
+    if (type === '开局') return excerpt(p.text || title, 220);
+    if (type === '规则') return excerpt(Array.isArray(p.rules) ? p.rules.join(' · ') : title, 220);
+    if (type === '装束') return excerpt(p.description || title, 220);
+    if (type === '能力') return excerpt([p.slot, p.school, p.skillType, p.mpCost !== undefined && p.mpCost !== null ? ('蓝耗 ' + p.mpCost) : '', p.effect].filter(Boolean).join(' · ') || title, 220);
+    if (type === '物品') return excerpt([p.category, p.quantity ? ('×' + p.quantity) : '', p.description].filter(Boolean).join(' · ') || title, 220);
+    if (type === '角色' || type === 'NPC') {
+      var src = Array.isArray(p.source) ? p.source : [], one = src[0] || {}, npc = (one && one.npc && typeof one.npc === 'object') ? one.npc : one, d = (npc && npc.档案) || {}, rel = (npc && npc.关系) || {};
+      return excerpt([d.种族, d.身份, d.阵营, d.能力系别, rel.与主角关系, d.外貌].filter(Boolean).join(' · ') || p.fallbackText || title, 220);
+    }
+    return excerpt(title, 220);
+  }
+
   // 云端 row → work 对象。payload 映射与 XYWS Package v1 完全一致，禁止另起协议。
   function rowToWork(row) {
     if (!row || typeof row !== 'object') return null;
@@ -60,7 +80,7 @@
       type: type,
       icon: ICON_MAP[type] || '✦',
       title: String(row.title || '未命名作品').slice(0, 120),
-      desc: String(row.summary || '').slice(0, 4000),
+      desc: String(row.summary || fallbackSummary(type, p, row.title || '') || '').slice(0, 4000),
       tags: Array.isArray(row.tags) ? row.tags.map(function (x) { return String(x).slice(0, 60); }).slice(0, 24) : [],
       likes: Number(row.likes) || 0,
       uses: Number(row.uses) || 0,
