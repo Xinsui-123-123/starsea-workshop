@@ -100,3 +100,13 @@ Discord OAuth 改为同一浏览器标签页跳转：当前 SillyTavern 标签�
 - `public.xyws_work_likes` 以 `(work_id,user_id)` 主键保证一个账号对同一作品最多一个赞；触发器原子维护 `xyws_works.likes`。
 - 下载量继续保存在 `xyws_works.uses`，管理后端使用带旧值条件的 PATCH compare-and-swap 重试，避免并发覆盖。
 - 客户端不提交 `author_user_id`，编辑权限仍只认服务端 introspect 的 trusted sub。
+
+
+## dev.25 人物结构统一增量
+
+- 不修改 OAuth、CloudBase Session、公共 GET、publish/manage 后端、数据库 7 种 `content_type`、Zod、星辉内核、世界书或事件推进器。
+- Workshop 人物/生灵 canonical source 继续使用合法 `npc` 结构；叙事上必要但当前 Zod 没有专栏的字段放在 `source.notes`，包括 `personality / speech / background / motivation / habits / weakness / combatStyle / origin / freeform`。
+- `source.notes` 不是第二套 MVU：直接安装时只把 `npc` 写入 `/重要人物/<姓名>`，notes 作为明确的“叙事硬设定”写入聊天输入框供用户检查发送；禁止自动映射到 `关系.钩子/秘密`。
+- 开场白 V1.3 的附加人物名册使用相同合法字段和相同 notes 语义；`__XYWS_OPENING_ADD_ROSTER__` 保持不变，因此 Workshop 人物可以无协议破坏地加入开局名册。
+- 从开场白主角命名档案发布时，显式 `state.role` 高于标题/标签推断；只导出当前角色类型，不携带另一类型的隐藏草稿，也不把 roster 附加人物混入主角作品。
+- 其它发布页的细化字段只在前端合成为既有 `outfit.description / ability.effect / item.description / play body`，不要求后端迁移。
