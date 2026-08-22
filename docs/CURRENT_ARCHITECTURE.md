@@ -1,15 +1,13 @@
-# 星海工坊 V2 当前架构（dev.30）
+# 星海工坊 V2 当前架构（dev.31）
 
 ## 人物 / 生灵边界
 
 - `type=角色` / cloud `content_type=person, subtype=character`：长期重要人物，安装到 `/重要人物/<姓名>`。
 - `type=NPC` / cloud `content_type=person, subtype=support`：轻量“生灵 / 配角”。魔物、使魔、灵兽、路人不写 `/重要人物`。
-- 星灵是 support 中的特殊类型：安装时写主角自己的 `/主角/星灵`，不会成为 NPC。
-- 历史 `subtype=npc` 继续按长期人物兼容；`subtype=support` 才归生灵 / 配角。
+- 星灵是 support 的特殊类型：安装为主角 `/主角/星灵`。
+- 历史 `subtype=npc` 保持长期人物兼容。
 
 ## Canonical 结构化人物
-
-与 dev.30 世界书 / Zod / 内核 / NPC 控制台 / 开场白同构：
 
 ```text
 人设
@@ -47,35 +45,66 @@
   秘密
 ```
 
-### 归类原则
-
-1. 能明确进入专用模块的内容必须进入专用模块：特性、招式、物品、星器、钩子、秘密。
-2. 不适合硬分成性格/背景/爱好的稳定信息，用 `人设.长期事实.<短标题>`；不需要额外类别。
-3. 原始作者文本单独保存在 Workshop `source.rawText`，用于编辑/档案，不直接成为 MVU 大字符串。
-4. `人设.补充设定` 仅作为旧人物兼容字段；新人物不再把未分类原文自动堆进去。
+归类原则：专用字段优先；无法自然硬分的稳定人物事实进入 `人设.长期事实`；原始作者文本保存在 Workshop `source.rawText`；`补充设定` 只保留旧档兼容。
 
 ## 主角特性
 
-配套 MVU 新增 `/主角/特性`，结构与 NPC 完全一致。魔法少女/守护者与魔人主角都可使用。特性是被动天赋、体质、常驻效果或固有性质，不占招式槽，不需要技能档位/蓝耗。
+配套 dev.30 MVU 已新增 `/主角/特性`，魔法少女 / 守护者和魔人共用同一结构。被动天赋、体质、常驻效果不占招式档位，不需要蓝耗。
 
-## 外部人物文本导入
+## dev.31 智能人物导入管线
 
-客户端不调用 AI 自动裁决变量。只对明确标签做确定性提取；无法可靠判断的原文仍保留在 `source.rawText`。用户可在人物发布页手动拆成长期事实、特性、招式、物品等结构化条目。
+```text
+粘贴自然语言 / 导入世界书
+        ↓
+SillyTavern 当前模型 generateRaw
+        ↓
+JSON Schema structured output（优先）
+        ↓  不支持时
+纯 JSON raw fallback
+        ↓
+本地 Normalize / Validate
+        ↓
+AI 语义草稿 Import Draft
+        ↓
+固定 Skill Adapter（档位 / 蓝耗）
+        ↓
+Canonical Person
+        ↓
+payload.source[]
+        ↓
+开场名册 / 中途安装 / MVU / NPC 控制台
+```
 
-## 人物等级
+### AI 与代码的边界
 
-人物表单只让玩家填 `等级（1～70，选填）`，现有星辉内核负责换算层级：
+AI 负责：
+- 理解自然语言；
+- 识别长期事实、特性、主动招式、物品、真正星器、钩子、秘密；
+- 在没有标题时生成简短展示名称；
+- 给主动招式判断语义强度 `powerTier` 和用途 `functionType`。
 
-- Lv1–10：见习 / 孳生体
-- Lv11–25：正式 / 蚀魂者
-- Lv26–40：精英 / 化渊者
-- Lv41–55：战姬 / 噬星者
-- Lv56–70：传奇 / 渊厄
+代码负责：
+- JSON 结构清洗和枚举 / 数量 / 置信度归一；
+- 变量安全名称；
+- Canonical 路径；
+- 档位和蓝耗数值；
+- 发布 payload；
+- 安装到 MVU。
+
+AI 不直接决定最终变量路径，也不自由编写蓝耗数值。
+
+## 世界书策略
+
+- 支持 `entries` 为数组或对象的 SillyTavern 世界书。
+- 用户填写人物名时，先用本地代码筛选包含该名字的条目及邻近条目。
+- 未填写人物名时，保留聚合文本交由模型识别主角人物。
+- 最多读 200 个非空 entry；聚合原文约 120k 字符上限；约 30k 字符分块整理后去重合并。
+- 原始聚合文本仍写入 `source.rawText`。
 
 ## 云端协议
 
-`person` 继续使用 XYWS Package v1 的 `payload.source[] + fallbackText`。当前 publish/manage 后端不会深层白名单化 `source[]` 元素，因此长期事实、特性、招式、背包、星器和 `rawText` 均可原样往返；read 直接返回数据库 payload。无需新增 `content_type` 或数据库字段。
+`person` 继续使用 XYWS Package v1：`payload.source[] + fallbackText`。publish / manage 只对 `source` 做数组级限制，不裁剪 source 元素内的结构化人物字段；read 直接返回 payload。因此 dev.31 无新增 `content_type`、无 SQL、无云函数迁移。
 
 ## 冻结
 
-OAuth/Auth、CloudBase Session、cloud read/write/manage、compat、数据库 content_type 与事件推进器不重构。dev.30 只对结构化人物链路做配套增量。
+OAuth/Auth、CloudBase Session、cloud read/write/manage、compat、数据库 ownership / content_type 与既有安装器不重构。dev.31 的功能增量集中在 Workshop 人物导入 / 发布体验。
