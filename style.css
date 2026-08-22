@@ -69,7 +69,7 @@
 .xyws-cards{display:flex;flex-direction:column;gap:8px}.xyws-card{border:1px solid var(--ws-edge2);border-radius:15px;padding:12px;background:linear-gradient(145deg,rgba(19,17,42,.70),rgba(8,8,21,.84));position:relative;overflow:hidden}
 .xyws-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--ws-cyanhi),transparent 55%,var(--ws-gold));opacity:.72}
 .xyws-cardtop{display:flex;gap:10px}.xyws-orb{width:35px;height:35px;flex:0 0 35px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--ws-edge);color:var(--ws-goldhi);background:rgba(255,255,255,.025);font-size:16px}
-.xyws-cmain{flex:1;min-width:0}.xyws-title{font-family:"STSong","Songti SC",serif;font-size:14px;font-weight:700;letter-spacing:.06em}.xyws-desc{color:var(--ws-dim);font-size:10.8px;line-height:1.5;margin-top:3px}
+.xyws-cmain{flex:1;min-width:0}.xyws-title{font-family:"STSong","Songti SC",serif;font-size:14px;font-weight:700;letter-spacing:.06em}.xyws-desc{color:var(--ws-dim);font-size:10.8px;line-height:1.5;margin-top:3px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;max-height:4.5em}
 .xyws-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}.xyws-tag{font-size:8.8px;padding:2px 6px;border:1px solid var(--ws-edge2);border-radius:999px;color:var(--ws-faint)}
 .xyws-foot{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:9.8px;color:var(--ws-faint)}.xyws-stats{display:flex;gap:10px}
 .xyws-mini{border:1px solid var(--ws-edge2);border-radius:8px;padding:4px 8px;background:rgba(255,255,255,.02);color:var(--ws-goldhi);font-size:9.8px}
