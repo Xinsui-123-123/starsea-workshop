@@ -548,6 +548,19 @@
     }
     function xywsNpcNum(v,d){var n=Number(v);return Number.isFinite(n)?n:(d==null?0:d);}
     function xywsNpcObj(v){return (v&&typeof v==='object'&&!Array.isArray(v))?v:{};}
+    function xywsNpcNarrativeValue(v,depth){
+      depth=depth||0;if(v===undefined||v===null||depth>3)return '';
+      if(typeof v==='string'){var s=v.trim();if(/^(?:\[object Object\]\s*,?\s*)+$/i.test(s))return '';return s;}
+      if(typeof v==='number'||typeof v==='boolean')return String(v);
+      if(Array.isArray(v))return v.map(function(x){return xywsNpcNarrativeValue(x,depth+1);}).filter(Boolean).join('；');
+      if(typeof v==='object'){
+        var title=xywsNpcNarrativeValue(v.name||v.title||v.label||v.名称||v.标题,depth+1);
+        var body=xywsNpcNarrativeValue(v.content||v.description||v.text||v.summary||v.effect||v.value||v.内容||v.描述||v.效果,depth+1);
+        if(title&&body&&title!==body)return title+'：'+body;if(body)return body;if(title)return title;
+        return Object.keys(v).filter(function(k){return k!=='confidence'&&k!=='置信度'&&k!=='$meta'&&String(k).indexOf('$__')!==0;}).map(function(k){var x=xywsNpcNarrativeValue(v[k],depth+1);return x?(String(k)+'：'+x):'';}).filter(Boolean).join('；');
+      }
+      return '';
+    }
     function xywsNpcSafeKey(v){var x=String(v||'').trim();return !!x&&x!=='$meta'&&!/^[\$_]/.test(x)&&!/[\/／\\＼.。\[\]【】'"`~\r\n]/.test(x);}
     function xywsNpcNotes(v){
       v=xywsNpcObj(v);var out={},keys=['personality','speech','background','motivation','habits','weakness','combatStyle','origin','freeform'];keys.forEach(function(k){var x=String(v[k]||'').trim();if(x)out[k]=x;});return out;
@@ -675,7 +688,7 @@
         招式:xywsNpcSanitizeMap(raw.招式,['档位','系别','类型','蓝耗','效果']),
         背包:xywsNpcSanitizeMap(raw.背包,['数量','类别','描述']),
         金钱:xywsNpcNum(raw.金钱,0),
-        关系:{与主角关系:String(rel.与主角关系||'').trim(),好感度:xywsNpcNum(rel.好感度,0),钩子:String(rel.钩子||'').trim(),秘密:String(rel.秘密||'').trim(),最后出场:String(rel.最后出场||'').trim()}
+        关系:{与主角关系:xywsNpcNarrativeValue(rel.与主角关系),好感度:xywsNpcNum(rel.好感度,0),钩子:xywsNpcNarrativeValue(rel.钩子),秘密:xywsNpcNarrativeValue(rel.秘密),最后出场:xywsNpcNarrativeValue(rel.最后出场)}
       };
       Object.keys(rec.特性).forEach(function(k){var a=rec.特性[k];if(!String(a.类型||'').trim())a.类型='被动';});
       Object.keys(rec.招式).forEach(function(k){var a=rec.招式[k];a.蓝耗=xywsNpcNum(a.蓝耗,0);});
@@ -1225,7 +1238,7 @@
         '- 不要输出蓝耗、档位等具体机械数值；schema 里没有这些字段。',
         '- skills.powerTier 只做语义强度判断：basic=普通基础动作/常用基础攻防；minor=低影响小能力；medium=明显改变局部局势；major=高影响王牌；domain=领域/大范围持续规则场；rule=直接改写规则、因果、时间线等规则级；unknown=证据不足。',
         '- functionType 用自然短词写用途，如 攻击/防护/控制/侦察/辅助/位移/净化/治疗/反击；不确定写“未分类”。',
-        '- school 只有原文明确或能从原文直接得出时才填；不确定留空。外部作品的能量体系和术语原样保留，不强行改叫“魔力”。',
+        '- 顶层 school 是人物整体能力系别：原文明示则原样保留；出现多个明确系别时用“+”连接。若原文没有正式系别名但人物确有超自然能力，可按能力核心保守概括为“特殊系·关键词”；明确没有超自然能力的凡人写“无”。traits/skills 的 school 优先保留原文术语，缺省可由工坊继承人物整体系别。外部作品的能量体系和术语原样保留，不强行改叫“魔力”。',
         '- confidence 0~100 表示该条分类把握，不表示能力强度。',
         '',
         '去重规则：同一原文事实不要同时复制到 facts/traits/skills/items 多处。优先放最专门的栏目。',
@@ -1239,8 +1252,8 @@
       return {};
     }
     function xywsPersonAiNormalizeDraft(o){
-      o=o&&typeof o==='object'&&!Array.isArray(o)?o:{};function txt(v){return typeof v==='string'?v.trim():(v==null?'':String(v).trim());}function cf(v){v=Math.round(Number(v));return Number.isFinite(v)?Math.max(0,Math.min(100,v)):50;}function list(v){return Array.isArray(v)?v:[];}
-      var out={},scalars=['name','alias','gender','race','age','identity','camp','relation','school','appearance','personality','behavior','background','battlewear','location','debut','situation','hook','secret'];scalars.forEach(function(k){out[k]=txt(o[k]);});out.kind=/^(mahou|demon|mortal|other)$/.test(txt(o.kind))?txt(o.kind):'other';
+      o=o&&typeof o==='object'&&!Array.isArray(o)?o:{};function txt(v){if(typeof v==='string')return v.trim();if(v===undefined||v===null)return '';if(typeof v==='number'||typeof v==='boolean')return String(v);return '';}function story(v){return xywsNpcNarrativeValue(v);}function cf(v){v=Math.round(Number(v));return Number.isFinite(v)?Math.max(0,Math.min(100,v)):50;}function list(v){return Array.isArray(v)?v:[];}
+      var out={},scalars=['name','alias','gender','race','age','identity','camp','relation','school','appearance','personality','behavior','background','battlewear','location','debut','situation'];scalars.forEach(function(k){out[k]=txt(o[k]);});out.hook=story(o.hook);out.secret=story(o.secret);out.kind=/^(mahou|demon|mortal|other)$/.test(txt(o.kind))?txt(o.kind):'other';
       out.facts=list(o.facts).filter(function(x){return x&&typeof x==='object';}).map(function(x){return {name:txt(x.name),content:txt(x.content),confidence:cf(x.confidence)};}).filter(function(x){return x.name||x.content;});
       out.traits=list(o.traits).filter(function(x){return x&&typeof x==='object';}).map(function(x){return {name:txt(x.name),school:txt(x.school),type:txt(x.type)||'被动',effect:txt(x.effect),confidence:cf(x.confidence)};}).filter(function(x){return x.name||x.effect;});
       out.skills=list(o.skills).filter(function(x){return x&&typeof x==='object';}).map(function(x){var pt=txt(x.powerTier).toLowerCase();if(!/^(basic|minor|medium|major|domain|rule|unknown)$/.test(pt))pt='unknown';return {name:txt(x.name),school:txt(x.school),functionType:txt(x.functionType)||'未分类',powerTier:pt,effect:txt(x.effect),confidence:cf(x.confidence)};}).filter(function(x){return x.name||x.effect;});
@@ -1272,6 +1285,12 @@
       (parts||[]).forEach(function(p){if(!p||typeof p!=='object')return;if(!out.name&&p.name)out.name=String(p.name).trim();if(out.kind==='other'&&/^(mahou|demon|mortal)$/.test(String(p.kind||'')))out.kind=String(p.kind);scalar.forEach(function(k){var v=String(p[k]||'').trim();if(!v)return;if(!out[k])out[k]=v;else if(['appearance','personality','behavior','background','relation','situation'].indexOf(k)>=0)out[k]=xywsAiMergeText(out[k],v);});out.hook=xywsAiMergeText(out.hook,p.hook);out.secret=xywsAiMergeText(out.secret,p.secret);(p.facts||[]).forEach(function(x){xywsAiDedupPush(out.facts,x,['name','content']);});(p.traits||[]).forEach(function(x){xywsAiDedupPush(out.traits,x,['name','effect']);});(p.skills||[]).forEach(function(x){xywsAiDedupPush(out.skills,x,['name','effect']);});(p.items||[]).forEach(function(x){xywsAiDedupPush(out.items,x,['name','description']);});(p.starGears||[]).forEach(function(x){xywsAiDedupPush(out.starGears,x,['name','effect']);});(p.unclassified||[]).forEach(function(x){xywsAiDedupPush(out.unclassified,x,['title','content']);});});return out;
     }
     function xywsTierFromSlot(slot){var m={'基础攻防':'basic','小技能':'minor','中技能':'medium','大技能':'major','领域':'domain','规则级':'rule'};return m[String(slot||'')]||'unknown';}
+    function xywsPersonAiInferSchool(draft){
+      draft=draft||{};var seen=[];function add(v){String(v||'').split(/[+＋、,，|｜]/).map(function(x){return x.trim();}).filter(function(x){return x&&!/^(?:未分类|未知|待定|无)$/i.test(x);}).forEach(function(x){if(seen.indexOf(x)<0)seen.push(x);});}
+      add(draft.school);(draft.skills||[]).forEach(function(x){add(x&&x.school);});(draft.traits||[]).forEach(function(x){add(x&&x.school);});
+      if(seen.length)return seen.join('+');var hasAbility=(draft.traits||[]).length>0||(draft.skills||[]).length>0;
+      if(draft.kind==='mortal'&&!hasAbility)return '无';if(hasAbility)return draft.kind==='demon'?'特殊本能':'特殊系';return '';
+    }
     function xywsSkillAutoMechanics(powerTier,functionType,effect){
       var tier=String(powerTier||'unknown').toLowerCase();if(!XYWS_AI_TIER_RULES[tier])tier='unknown';if(tier==='unknown'&&/普攻|基础攻击|普通攻击|基础防御/.test(String(effect||'')+' '+String(functionType||'')))tier='basic';var rule=XYWS_AI_TIER_RULES[tier];return {tier:tier,slot:rule.slot,cost:rule.cost};
     }
@@ -1291,8 +1310,9 @@
       function sec(title,count,html){if(!count)return '';return '<details class="xyws-ai-preview-sec"><summary>'+esc(title)+' <span>· '+count+'</span></summary><div class="xyws-ai-cardgrid">'+html+'</div></details>';}
       var h='<div class="xyws-ai-result-head"><div><b>✓ 人物整理完成</b><span>原文已保留；结构化字段可以直接进入变量。</span></div><button type="button" class="xyws-secondary xyws-ai-editbtn" data-a="person-ai-manual">高级编辑</button></div><div class="xyws-ai-pills">'+pill(base,'基础')+pill(facts.length+un.length,'长期事实')+pill(traits.length,'特性')+pill(skills.length,'招式')+pill(items.length+gears.length,'物品/装备')+pill(plot,'剧情')+'</div><div class="xyws-ai-okline">✦ 本地能力规则已自动适配'+(low?(' · '+low+' 条低置信度信息已保留，可直接发布或手动检查'):' · 未发现需要玩家补填的机械字段')+'</div>';
       h+=sec('长期事实',facts.length+un.length,facts.map(function(x){return xywsPersonAiPreviewCard(x.name,'长期事实',x.content,Number(x.confidence)<60?'待确认':'');}).concat(un.map(function(x){return xywsPersonAiPreviewCard(x.title||'待分类事实','待分类 · '+(x.reason||'分类不确定'),x.content,'保留');})).join(''));
-      h+=sec('特性 / 天赋',traits.length,traits.map(function(x){return xywsPersonAiPreviewCard(x.name,[x.school,x.type||'被动'].filter(Boolean).join(' · '),x.effect,Number(x.confidence)<60?'待确认':'');}).join(''));
-      h+=sec('招式 / 技能',skills.length,skills.map(function(x){var m=xywsSkillAutoMechanics(x.powerTier,x.functionType,x.effect);return xywsPersonAiPreviewCard(x.name,[x.school,x.functionType,m.slot+'（自动）'].filter(Boolean).join(' · '),x.effect,'已适配');}).join(''));
+      var overallSchool=xywsPersonAiInferSchool(draft);
+      h+=sec('特性 / 天赋',traits.length,traits.map(function(x){return xywsPersonAiPreviewCard(x.name,[x.school||overallSchool,x.type||'被动'].filter(Boolean).join(' · '),x.effect,Number(x.confidence)<60?'待确认':'');}).join(''));
+      h+=sec('招式 / 技能',skills.length,skills.map(function(x){var m=xywsSkillAutoMechanics(x.powerTier,x.functionType,x.effect);return xywsPersonAiPreviewCard(x.name,[x.school||overallSchool,x.functionType,m.slot+'（自动）'].filter(Boolean).join(' · '),x.effect,'已适配');}).join(''));
       h+=sec('物品 / 装备',items.length+gears.length,items.map(function(x){return xywsPersonAiPreviewCard(x.name,[x.category,'×'+(x.quantity||1)].filter(Boolean).join(' · '),x.description,'');}).concat(gears.map(function(x){return xywsPersonAiPreviewCard(x.name,'星器 · 本地品阶/契合自动适配',x.effect,'已适配');})).join(''));
       if(plot)h+=sec('关系与剧情',plot,[draft.hook?xywsPersonAiPreviewCard('剧情钩子','',draft.hook,''):'',draft.secret?xywsPersonAiPreviewCard('秘密','',draft.secret,''):'' ].join(''));
       host.innerHTML=h;host.hidden=false;
@@ -1300,11 +1320,11 @@
     function xywsApplyPersonAiDraft(draft,rawText){
       draft=draft||{};var usedFacts={},usedTraits={},usedSkills={},usedItems={},usedGears={};var raw=String(rawText||'');
       ['[data-npc-fact-list]','[data-npc-trait-list]','[data-npc-skill-list]','[data-npc-gear-list]','[data-npc-item-list]'].forEach(function(sel){var box=$(sel);if(box)box.innerHTML='';});
-      var nm=String(xywsNpcField('name')||draft.name||xywsPickLabeled(raw,['姓名','名字','角色名'])||'').trim();if(!nm)nm='未命名人物-'+xywsHash(raw).slice(0,5);xywsNpcSetField('name',nm);xywsNpcSetField('kind',/^(mahou|demon|mortal|other)$/.test(String(draft.kind||''))?draft.kind:'other');xywsNpcSetField('alias',draft.alias);xywsNpcSetField('gender',draft.gender);xywsNpcSetField('race',draft.race||xywsNpcRaceForKind(draft.kind));var am=String(draft.age||'').match(/\d{1,4}/);xywsNpcSetField('age',am?am[0]:'');xywsNpcSetField('identity',draft.identity);xywsNpcSetField('camp',draft.camp);xywsNpcSetField('relation',draft.relation);xywsNpcSetField('school',draft.school);xywsNpcSetField('look',draft.appearance);xywsNpcSetField('personality',draft.personality);xywsNpcSetField('combatStyle',draft.behavior);xywsNpcSetField('background',draft.background);xywsNpcSetField('battlewear',draft.battlewear);xywsNpcSetField('location',draft.location);xywsNpcSetField('debut',draft.debut);xywsNpcSetField('situation',draft.situation);xywsNpcSetField('hook',draft.hook);xywsNpcSetField('secret',draft.secret);xywsNpcSetField('rawText',raw);
+      var overallSchool=xywsPersonAiInferSchool(draft);draft.school=overallSchool;var nm=String(xywsNpcField('name')||draft.name||xywsPickLabeled(raw,['姓名','名字','角色名'])||'').trim();if(!nm)nm='未命名人物-'+xywsHash(raw).slice(0,5);xywsNpcSetField('name',nm);xywsNpcSetField('kind',/^(mahou|demon|mortal|other)$/.test(String(draft.kind||''))?draft.kind:'other');xywsNpcSetField('alias',draft.alias);xywsNpcSetField('gender',draft.gender);xywsNpcSetField('race',draft.race||xywsNpcRaceForKind(draft.kind));var am=String(draft.age||'').match(/\d{1,4}/);xywsNpcSetField('age',am?am[0]:'');xywsNpcSetField('identity',draft.identity);xywsNpcSetField('camp',draft.camp);xywsNpcSetField('relation',xywsNpcNarrativeValue(draft.relation));xywsNpcSetField('school',overallSchool);xywsNpcSetField('look',draft.appearance);xywsNpcSetField('personality',draft.personality);xywsNpcSetField('combatStyle',draft.behavior);xywsNpcSetField('background',draft.background);xywsNpcSetField('battlewear',draft.battlewear);xywsNpcSetField('location',draft.location);xywsNpcSetField('debut',draft.debut);xywsNpcSetField('situation',draft.situation);xywsNpcSetField('hook',xywsNpcNarrativeValue(draft.hook));xywsNpcSetField('secret',xywsNpcNarrativeValue(draft.secret));xywsNpcSetField('rawText',raw);
       (draft.facts||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'事实',x.content,i,usedFacts);xywsNpcAppendFact(x.content,n);});
       (draft.unclassified||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.title,'待分类',x.content,i+1000,usedFacts);xywsNpcAppendFact(x.content,n);});
-      (draft.traits||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'特性',x.effect,i,usedTraits);xywsNpcAppendTrait({系别:x.school||'',类型:x.type||'被动',效果:x.effect||''},n);});
-      (draft.skills||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'能力',x.effect,i,usedSkills),m=xywsSkillAutoMechanics(x.powerTier,x.functionType,x.effect);xywsNpcAppendSkill({档位:m.slot,系别:x.school||draft.school||'未分类',类型:x.functionType||'未分类',蓝耗:m.cost,效果:x.effect||''},n);});
+      (draft.traits||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'特性',x.effect,i,usedTraits);xywsNpcAppendTrait({系别:x.school||overallSchool||(draft.kind==='demon'?'特殊本能':'特殊系'),类型:x.type||'被动',效果:x.effect||''},n);});
+      (draft.skills||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'能力',x.effect,i,usedSkills),m=xywsSkillAutoMechanics(x.powerTier,x.functionType,x.effect);xywsNpcAppendSkill({档位:m.slot,系别:x.school||overallSchool||(draft.kind==='demon'?'特殊本能':'特殊系'),类型:x.functionType||'未分类',蓝耗:m.cost,效果:x.effect||''},n);});
       (draft.items||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'物品',x.description,i,usedItems);xywsNpcAppendItem({数量:Math.max(1,Math.round(Number(x.quantity)||1)),类别:x.category||'杂物',描述:x.description||''},n);});
       (draft.starGears||[]).forEach(function(x,i){var n=xywsAiSafeKey(x.name,'星器',x.effect,i,usedGears);xywsNpcAppendGear({类型:x.type||'',品阶:'寻常',契合:'初缔',效果:x.effect||''},n);});
       overlay.__xywsPersonAiDraft=xywsClone(draft);xywsRenderPersonAiSummary(draft);var srcBox=$('[data-person-ai-sourcebox]');if(srcBox)srcBox.open=false;var adv=$('[data-person-advanced]');if(adv)adv.open=false;xywsPersonAiSetStatus('整理完成。你可以直接发布；只有想精调时才需要打开高级编辑。','done');
