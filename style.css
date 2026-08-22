@@ -236,3 +236,17 @@
 #xyws-extension-settings .xyws-ext-actions{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0 8px}
 #xyws-extension-settings .xyws-ext-status{display:block;opacity:.72;line-height:1.45;margin-bottom:5px}
 #xyws-extension-settings .xyws-ext-update{font-weight:700}
+
+
+/* dev.28: 外层扩展卡片按钮固定横排；仅修复 SillyTavern .menu_button 的窄宽度继承 */
+#xyws-extension-settings .xyws-ext-actions{
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:8px!important;flex-wrap:wrap!important;
+}
+#xyws-extension-settings .xyws-ext-actions .menu_button{
+  display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;min-width:max-content!important;max-width:none!important;height:auto!important;
+  white-space:nowrap!important;word-break:keep-all!important;overflow-wrap:normal!important;
+  writing-mode:horizontal-tb!important;text-orientation:mixed!important;
+  padding:6px 12px!important;line-height:1.3!important;
+}
