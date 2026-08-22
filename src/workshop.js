@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  // ★ 星海工坊 V2.0 dev.27：普通“扩展程序”抽屉直接显示工坊更新状态；人物等级仅填数字并由星辉内核换算阶级/位格；能力页恢复现有五字段并支持本地自动命名。
+  // ★ 星海工坊 V2.0 dev.29：人物作品接入长期人设变量；星灵作品可安装为主角星灵伙伴；外部人物文本使用固定字段名做非 AI 提取。
   // ★ dev.25：人物/生灵曾统一为完整 /重要人物 结构；dev.26 已撤回这种过度统一，只为旧作品保留兼容读取。
   // ★ V1.9：新增装束 / 能力 / 物品作品与 MVU 安装；顶部分类横向滑动；NPC 显示栏目改为生灵。
   // ★ V1.8：作品数据协议层——增加标准作品包（XYWS Package v1）导入/导出，先用本地文件完整验证 A 端发布 → B 端读取 → 按类型安装；移除把星灵当 NPC 的示例。
@@ -455,7 +455,7 @@
     function xywsGeneratedSummary(w){
       if(!w)return '';
       if(w.type==='角色'){
-        try{var src=xywsWorkNpcSources(w),one=src[0]||{},rec=one.npc||{},d=rec.档案||{},st=rec.状态||{},rel=rec.关系||{},nt=xywsNpcNotes(one.notes);var p=[d.种族,d.身份,d.能力系别,st.战服,rel.与主角关系,nt.personality,d.外貌].filter(Boolean).join(' · ');if(p)return xywsExcerpt(p,84);}catch(e){}
+        try{var src=xywsWorkNpcSources(w),one=src[0]||{},rec=one.npc||{},d=rec.档案||{},ps=rec.人设||{},st=rec.状态||{},rel=rec.关系||{};var p=[d.种族,d.身份,d.能力系别,st.战服,rel.与主角关系,ps.性格,d.外貌].filter(Boolean).join(' · ');if(p)return xywsExcerpt(p,84);}catch(e){}
       }
       if(w.type==='NPC'){try{var sp=xywsWorkSupportSources(w)[0]||{};var pp=[xywsSupportKindLabel(sp.kind),sp.role,sp.personality,sp.ability,sp.relation].filter(Boolean).join(' · ');if(pp)return xywsExcerpt(pp,84);}catch(e2){}}
       if(w.type==='能力'){var a=w.ability||{},sa=[a.skillName,a.school,a.skillType,a.effect].filter(Boolean).join(' · ');if(sa)return xywsExcerpt(sa,84);}
@@ -550,6 +550,18 @@
       v=xywsNpcObj(v);var out={},keys=['personality','speech','background','motivation','habits','weakness','combatStyle','origin','freeform'];keys.forEach(function(k){var x=String(v[k]||'').trim();if(x)out[k]=x;});return out;
     }
     function xywsNpcNotesAny(v){return Object.keys(xywsNpcNotes(v)).length>0;}
+    function xywsNpcPerson(v){v=xywsNpcObj(v);return {性格:String(v.性格||'').trim(),言行模式:String(v.言行模式||'').trim(),背景要点:String(v.背景要点||'').trim(),补充设定:String(v.补充设定||'').trim()};}
+    function xywsNpcCore(v){v=xywsNpcObj(v);return {名号:String(v.名号||'').trim(),特征:String(v.特征||'').trim(),状态:String(v.状态||'').trim()};}
+    function xywsJoinFacts(parts){return parts.filter(function(x){return String(x||'').trim();}).map(function(x){return String(x).trim();}).join('；');}
+    function xywsApplyNpcNotes(rec,notes,kind){
+      rec=rec||{};notes=xywsNpcNotes(notes);var ps=xywsNpcPerson(rec.人设),core=xywsNpcCore(rec.本源);kind=xywsNpcKindFromRecord(rec,kind);
+      if(!ps.性格&&notes.personality)ps.性格=notes.personality;
+      if(!ps.言行模式)ps.言行模式=xywsJoinFacts([notes.speech&&('说话：'+notes.speech),notes.habits&&('习惯：'+notes.habits),notes.combatStyle&&('行动：'+notes.combatStyle)]);
+      if(!ps.背景要点)ps.背景要点=xywsJoinFacts([notes.background&&('经历：'+notes.background),notes.motivation&&('动机：'+notes.motivation),notes.weakness&&('弱点/边界：'+notes.weakness)]);
+      if(kind==='demon'&&notes.origin&&!core.特征)core.特征=notes.origin;
+      if(!ps.补充设定)ps.补充设定=xywsJoinFacts([(kind!=='demon'&&notes.origin)?('核心设定：'+notes.origin):'',notes.freeform]);
+      rec.人设=ps;rec.本源=core;return rec;
+    }
     function xywsNpcNarrativeText(notes){
       notes=xywsNpcNotes(notes);var L=[],map=[['personality','性格与行为'],['speech','说话方式 / 口癖'],['background','背景经历'],['motivation','目标 / 动机'],['habits','习惯 / 偏好'],['weakness','弱点 / 忌讳 / 边界'],['combatStyle','战斗风格 / 行动偏好'],['origin','本源 / 核心叙事设定'],['freeform','待分类补充设定']];
       map.forEach(function(x){if(notes[x[0]])L.push(x[1]+'：'+notes[x[0]]);});return L.join('\n');
@@ -557,6 +569,66 @@
     function xywsNpcNarrativePrompt(name,notes){
       var t=xywsNpcNarrativeText(notes);if(!t)return '';
       return '【星海工坊·人物补充叙事设定】\n人物：'+String(name||'未命名人物')+'\n'+t+'\n\n分类约束：以上是叙事硬设定，不要为了“有地方存”而塞进关系.钩子或关系.秘密；钩子只保存真正的剧情伏笔/待办，秘密只保存角色确实隐瞒的事实。若当前合法 MVU 没有对应专栏，则保留在叙事上下文中，不伪造字段。';
+    }
+    function xywsPickLabeled(text,labels){
+      text=String(text||'');for(var i=0;i<labels.length;i++){var lab=labels[i].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),rx=new RegExp('(?:^|\\n)\\s*(?:[-*]\\s*)?(?:【)?'+lab+'(?:】)?\\s*[:：]\\s*([^\\n\\r]+)','i'),m=text.match(rx);if(m&&String(m[1]||'').trim())return String(m[1]).trim();}return '';
+    }
+    function xywsKnownPersonLabels(){return ['姓名','名字','角色名','名称','星灵名号','名号','代号','称号','别名','性别','种族','类型','身份','职业','职位','定位','阵营','所属','能力系别','系别','能力','能力说明','本能','灾异本能','特长','效果','外貌','外观','外形','长相','本相','身高','体型','身材','体态','三围','发色','头发','瞳色','眼睛','眼眸','与主角关系','关系','羁绊描述','剧情用途','用途','剧情钩子','钩子','伏笔','秘密','性格','人格','个性','言行模式','说话方式','口癖','语气','背景要点','背景','经历','来历','目标','动机','习惯','偏好','弱点','忌讳','禁忌','行为模式','行动模式','战斗风格','本源名号','渊核名号','本源特征','核心本源','本源状态','渊核状态','本源','星灵名字','星灵名称','星灵本相','星灵化形','星灵现状','星灵言语','星灵性格','星灵互动方式','星灵互动','星灵羁绊描述','互动方式','互动','相处方式','回应方式','言语','语言','能否言语','说话','现状','当前状态','状态','羁绊','同步度','契合度','登场方式','登场安排'];}
+    function xywsPickBlock(text,labels){
+      var lines=String(text||'').replace(/\r/g,'').split('\n'),targets=labels.map(function(x){return String(x);}),all=xywsKnownPersonLabels();
+      var escAll=all.map(function(x){return x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|'),nextRx=new RegExp('^\\s*(?:[-*]\\s*)?(?:【)?(?:'+escAll+')(?:】)?\\s*[:：]','i');
+      for(var i=0;i<lines.length;i++){
+        for(var j=0;j<targets.length;j++){
+          var lab=targets[j].replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),rx=new RegExp('^\\s*(?:[-*]\\s*)?(?:【)?'+lab+'(?:】)?\\s*[:：]\\s*(.*)$','i'),m=lines[i].match(rx);if(!m)continue;
+          var out=[];if(String(m[1]||'').trim())out.push(String(m[1]).trim());
+          for(var k=i+1;k<lines.length;k++){
+            var ln=String(lines[k]||'');if(nextRx.test(ln))break;
+            if(!ln.trim()){if(out.length)break;continue;}
+            out.push(ln.replace(/^\s*[-*]\s*/, '').trim());
+          }
+          var val=out.filter(Boolean).join('；');if(val)return val;
+        }
+      }
+      return '';
+    }
+    function xywsPickAppearance(text){
+      var parts=[],base=xywsPickBlock(text,['外貌','外观','外形','长相']);if(base)parts.push('外貌：'+base);
+      var pairs=[['身高',['身高']],['体型',['体型','身材','体态']],['三围',['三围']],['发色',['发色','头发']],['瞳色',['瞳色','眼睛','眼眸']]];pairs.forEach(function(x){var v=xywsPickLabeled(text,x[1]);if(v)parts.push(x[0]+'：'+v);});return parts.join('；');
+    }
+    function xywsCompactRaw(text,max){var s=String(text||'').replace(/\r/g,'').replace(/\n{3,}/g,'\n\n').trim(),n=max||1600;return s.length>n?s.slice(0,n-1)+'…':s;}
+    function xywsUnlabeledRemainder(text,max){
+      var labels=xywsKnownPersonLabels(),esc=labels.map(function(x){return x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|');
+      var rx=new RegExp('^\\s*(?:[-*]\\s*)?(?:【)?(?:'+esc+')(?:】)?\\s*[:：]\\s*(.*)$','i'),lines=String(text||'').replace(/\r/g,'').split('\n'),out=[],insideKnown=false;
+      for(var i=0;i<lines.length;i++){
+        var line=String(lines[i]||''),m=line.match(rx);
+        if(m){insideKnown=!String(m[1]||'').trim();continue;}
+        if(!line.trim()){insideKnown=false;continue;}
+        if(insideKnown)continue;
+        out.push(line);
+      }
+      return xywsCompactRaw(out.join('\n'),max||1200);
+    }
+    function xywsPersonTextSeed(title,text){
+      text=String(text||'');var kind=xywsSupportKindGuess([title,text].join(' '))==='monster'?'demon':(/魔人|深渊|渊裔|恶魔/.test(text)?'demon':(/魔法少女|守护者|契约者|星灵契约/.test(text)?'mahou':'other'));
+      var rec=xywsSanitizeNpcRecord({档案:{姓名:xywsPickLabeled(text,['姓名','名字','角色名'])||String(title||'未命名人物'),代号:xywsPickLabeled(text,['代号','称号','别名']),性别:xywsPickLabeled(text,['性别']),种族:xywsPickLabeled(text,['种族','类型'])||xywsNpcRaceForKind(kind),身份:xywsPickLabeled(text,['身份','职业','职位']),阵营:xywsPickLabeled(text,['阵营','所属']),能力系别:xywsPickLabeled(text,['能力系别','系别','能力','本能']),外貌:xywsPickAppearance(text)},星灵:{名号:xywsPickLabeled(text,['星灵名号','星灵名字','星灵名称']),本相:xywsPickLabeled(text,['星灵本相','星灵化形']),现状:xywsPickLabeled(text,['星灵现状']),言语:xywsPickLabeled(text,['星灵言语']),性格:xywsPickLabeled(text,['星灵性格']),互动方式:xywsPickLabeled(text,['星灵互动方式','星灵互动']),羁绊描述:xywsPickLabeled(text,['星灵羁绊描述'])},本源:{名号:xywsPickLabeled(text,['本源名号','渊核名号']),特征:xywsPickLabeled(text,['本源特征','核心本源']),状态:xywsPickLabeled(text,['本源状态','渊核状态'])},关系:{与主角关系:xywsPickLabeled(text,['与主角关系','关系']),钩子:xywsPickLabeled(text,['剧情钩子','钩子','伏笔']),秘密:xywsPickLabeled(text,['秘密'])}},kind);
+      var notes={personality:xywsPickBlock(text,['性格','人格','个性']),speech:xywsPickBlock(text,['言行模式','说话方式','口癖','语气']),background:xywsPickBlock(text,['背景要点','背景','经历','来历']),motivation:xywsPickLabeled(text,['目标','动机']),habits:xywsPickLabeled(text,['习惯','偏好']),weakness:xywsPickLabeled(text,['弱点','忌讳','禁忌']),combatStyle:xywsPickBlock(text,['行为模式','行动模式','战斗风格']),origin:kind==='demon'?xywsPickBlock(text,['本源特征','核心本源','本源']):'',freeform:xywsUnlabeledRemainder(text,1200)};
+      return xywsNpcSourceFromRecord(rec,kind,'',notes);
+    }
+    function xywsSupportTextSeed(title,text){
+      text=String(text||'');var kind=xywsSupportKindGuess([title,text].join(' '));
+      var name=xywsPickLabeled(text,['名称','姓名','名字','角色名','星灵名号','名号'])||String(title||'未命名生灵');
+      var role=xywsPickLabeled(text,['定位','身份','类型','种族','职业']);
+      var appearance=xywsPickBlock(text,['本相','外貌','外观','外形','长相']);
+      var personality=xywsPickBlock(text,['性格','人格','个性','行为模式']);
+      var interaction=kind==='spirit'?xywsPickLabeled(text,['互动方式','互动','相处方式','回应方式']):'';
+      var voice=kind==='spirit'?xywsPickLabeled(text,['言语','语言','能否言语','说话']):'';
+      if(kind==='spirit'&&/不言语|不能说话|不说话/.test(voice))voice='不言语';else if(kind==='spirit'&&/可言语|可以说话|会说话/.test(voice))voice='可言语';else if(kind==='spirit')voice='';
+      var status=kind==='spirit'?xywsPickLabeled(text,['现状','当前状态','状态']):'';
+      var bondRaw=kind==='spirit'?xywsPickLabeled(text,['羁绊','同步度','契合度']):'',bond=0,m=bondRaw.match(/\d{1,3}/);if(m)bond=Math.max(0,Math.min(100,Number(m[0])||0));
+      var ability=xywsPickBlock(text,['能力','能力说明','本能','灾异本能','特长','效果']);
+      var relation=xywsPickLabeled(text,['与主角关系','关系','羁绊描述','剧情用途','用途']);
+      var debut=xywsPickLabeled(text,['登场方式','登场安排']);
+      return {kind:kind,name:name,role:role,appearance:appearance,personality:personality,interaction:interaction,voice:voice,status:status,bond:bond,ability:ability,relation:relation,debut:debut,notes:xywsUnlabeledRemainder(text,1200),include:true};
     }
     function xywsNpcRaceForKind(kind){return kind==='mahou'?'魔法少女':(kind==='demon'?'魔人':(kind==='mortal'?'凡人':''));}
     function xywsNpcKindFromRecord(rec,fallback){
@@ -574,13 +646,15 @@
       });return out;
     }
     function xywsSanitizeNpcRecord(raw,kind){
-      raw=xywsNpcObj(raw);kind=xywsNpcKindFromRecord(raw,kind);var d=xywsNpcObj(raw.档案),war=xywsNpcObj(raw.战力),st=xywsNpcObj(raw.状态),co=xywsNpcObj(raw.侵蚀),sp=xywsNpcObj(raw.星灵),rel=xywsNpcObj(raw.关系);
+      raw=xywsNpcObj(raw);kind=xywsNpcKindFromRecord(raw,kind);var d=xywsNpcObj(raw.档案),ps=xywsNpcPerson(raw.人设),war=xywsNpcObj(raw.战力),st=xywsNpcObj(raw.状态),co=xywsNpcObj(raw.侵蚀),sp=xywsNpcObj(raw.星灵),core=xywsNpcCore(raw.本源),rel=xywsNpcObj(raw.关系);
       var rec={
         档案:{姓名:String(d.姓名||'').trim(),代号:String(d.代号||'').trim(),性别:String(d.性别||'').trim(),种族:String(d.种族||xywsNpcRaceForKind(kind)).trim(),真实年龄:xywsNpcNum(d.真实年龄,0),表观年龄:xywsNpcNum(d.表观年龄,0),身份:String(d.身份||'').trim(),阵营:String(d.阵营||'').trim(),能力系别:String(d.能力系别||'').trim(),亲和体质:String(d.亲和体质||'').trim(),契龄:xywsNpcNum(d.契龄,0),外貌:String(d.外貌||'').trim()},
+        人设:ps,
         战力:{等级:xywsNpcNum(war.等级,0),经验:xywsNpcNum(war.经验,0),层级声明:String(war.层级声明||war._阶级||war._位格||'').trim()},
         状态:{生命:xywsNpcNum(st.生命,100),魔力:xywsNpcNum(st.魔力,kind==='mortal'?0:100),情欲:xywsNpcNum(st.情欲,0),变身:/变身中|已变身|现形/.test(String(st.变身||''))?'变身中':'日常态',战服:String(st.战服||'').trim(),处境:String(st.处境||'').trim(),战况:String(st.战况||'无战事').trim()||'无战事',伤势:xywsNpcObj(st.伤势),位置:String(st.位置||'').trim()},
         侵蚀:{阶段:['未染','初蚀','沉沦','半堕','恶堕'].indexOf(String(co.阶段||''))>=0?String(co.阶段):'未染',侵蚀值:xywsNpcNum(co.侵蚀值,0)},
-        星灵:{名号:String(sp.名号||'').trim(),本相:String(sp.本相||'').trim(),现状:String(sp.现状||'').trim(),蚀相:String(sp.蚀相||'').trim(),言语:['可言语','不言语'].indexOf(String(sp.言语||''))>=0?String(sp.言语):'',羁绊:xywsNpcNum(sp.羁绊,0),羁绊描述:String(sp.羁绊描述||'').trim()},
+        星灵:{名号:String(sp.名号||'').trim(),本相:String(sp.本相||'').trim(),现状:String(sp.现状||'').trim(),蚀相:String(sp.蚀相||'').trim(),言语:['可言语','不言语'].indexOf(String(sp.言语||''))>=0?String(sp.言语):'',羁绊:xywsNpcNum(sp.羁绊,0),羁绊描述:String(sp.羁绊描述||'').trim(),性格:String(sp.性格||'').trim(),互动方式:String(sp.互动方式||'').trim()},
+        本源:core,
         躯体:xywsNpcSanitizeMap(raw.躯体,['白描','变身装甲']),
         星器:xywsNpcSanitizeMap(raw.星器,['类型','品阶','契合','效果']),
         招式:xywsNpcSanitizeMap(raw.招式,['档位','系别','类型','蓝耗','效果']),
@@ -592,13 +666,15 @@
       Object.keys(rec.背包).forEach(function(k){var it=rec.背包[k];it.数量=Math.max(0,Math.round(xywsNpcNum(it.数量,0)));});
       return rec;
     }
-    function xywsNpcSourceFromRecord(rec,kind,debut,notes){rec=xywsSanitizeNpcRecord(rec,kind);return {kind:xywsNpcKindFromRecord(rec,kind),name:String(rec.档案.姓名||'').trim(),debut:String(debut||'').trim(),include:true,npc:rec,notes:xywsNpcNotes(notes)};}
+    function xywsNpcSourceFromRecord(rec,kind,debut,notes){rec=xywsSanitizeNpcRecord(rec,kind);rec=xywsApplyNpcNotes(rec,notes,kind);return {kind:xywsNpcKindFromRecord(rec,kind),name:String(rec.档案.姓名||'').trim(),debut:String(debut||'').trim(),include:true,npc:rec,notes:xywsNpcNotes(notes)};}
     function xywsNpcRecordText(rec,notes){
       rec=xywsSanitizeNpcRecord(rec);var L=[];function add(k,v){if(v!==undefined&&v!==null&&String(v).trim()!==''&&!(typeof v==='number'&&v===0))L.push(k+'：'+String(v));}
-      var d=rec.档案,w=rec.战力,st=rec.状态,co=rec.侵蚀,r=rec.关系;
+      var d=rec.档案,ps=rec.人设||{},w=rec.战力,st=rec.状态,co=rec.侵蚀,sp=rec.星灵||{},core=rec.本源||{},r=rec.关系;
       add('姓名',d.姓名);add('代号',d.代号);add('性别',d.性别);add('种族',d.种族);if(d.真实年龄)add('年龄',d.真实年龄);add('身份 / 职业',d.身份);add('阵营',d.阵营);add('能力系别 / 本能',d.能力系别);add('外貌',d.外貌);
+      add('性格',ps.性格);add('言行模式',ps.言行模式);add('背景要点',ps.背景要点);add('补充设定',ps.补充设定);
       add('等级',w.等级);if(w.层级声明)add('阶级 / 位格（旧数据兼容）',w.层级声明);add('当前装束 / 武装',st.战服);add('当前处境',st.处境);add('位置',st.位置);if(co.阶段&&co.阶段!=='未染')add('侵蚀阶段',co.阶段);add('与主角关系',r.与主角关系);add('剧情钩子',r.钩子);add('秘密',r.秘密);
-      var nt=xywsNpcNarrativeText(notes);if(nt)L.push('叙事设定：\n'+nt);
+      if(sp.名号||sp.本相||sp.性格||sp.互动方式){add('星灵伙伴',[sp.名号,sp.本相,sp.性格,sp.互动方式].filter(Boolean).join('｜'));}
+      if(core.名号||core.特征||core.状态){add('本源核心',[core.名号,core.特征,core.状态].filter(Boolean).join('｜'));}
       var legacy=[];if(Object.keys(rec.招式||{}).length)legacy.push('已有招式 '+Object.keys(rec.招式).length+' 项');if(Object.keys(rec.星器||{}).length)legacy.push('已有星器 '+Object.keys(rec.星器).length+' 项');if(Object.keys(rec.背包||{}).length)legacy.push('已有背包物品 '+Object.keys(rec.背包).length+' 项');if(Object.keys(rec.躯体||{}).length)legacy.push('已有躯体细分 '+Object.keys(rec.躯体).length+' 项');if(legacy.length)L.push('旧版兼容数据：'+legacy.join(' · '));
       return L.join('\n');
     }
@@ -610,7 +686,8 @@
         战力:{等级:0,经验:0,层级声明:demon?String(st.demon_tier||''):String(st.rank||'')},
         状态:{生命:100,魔力:demon?100:100,情欲:0,变身:'日常态',战服:'',处境:'',战况:'无战事',伤势:{},位置:''},
         侵蚀:{阶段:demon?'未染':String(st.corruption_stage||'未染'),侵蚀值:0},
-        星灵:demon?{}:{名号:'',本相:String(st.astral_form||''),现状:'',蚀相:'',言语:String(st.astral_voice||''),羁绊:0,羁绊描述:String(st.astral_relation||'')},
+        星灵:demon?{}:{名号:'',本相:String(st.astral_form||''),现状:'',蚀相:'',言语:String(st.astral_voice||''),羁绊:0,羁绊描述:String(st.astral_relation||''),性格:String(st.astral_per||''),互动方式:''},
+        本源:demon?{名号:String(st.demon_core_name||''),特征:String(st.demon_core||''),状态:''}:{名号:'',特征:'',状态:''},
         躯体:{变身外观:{白描:String(st.look||''),变身装甲:demon?String(st.demon_outfit||''):String(st.mahou_outfit||'')}},
         星器:{},招式:{},背包:{},金钱:0,
         关系:{与主角关系:'',好感度:0,钩子:'',秘密:'',最后出场:''}
@@ -643,15 +720,26 @@
     function xywsSupportKindGuess(text){text=String(text||'');if(/星灵/.test(text))return 'spirit';if(/使魔|召唤物|宠物/.test(text))return 'familiar';if(/灵兽|魔兽|异兽/.test(text))return 'beast';if(/魔物|怪物|恶魔|深渊生物/.test(text))return 'monster';if(/凡人|普通人|路人|学生|店员|记者|居民/.test(text))return 'mortal';return 'other';}
     function xywsNormalizeSupportSource(raw,w){
       raw=xywsNpcObj(raw);var simple=raw.support&&typeof raw.support==='object'?xywsNpcObj(raw.support):raw;
-      if(simple.kind&&simple.name&&!simple.npc&&!simple.档案){return {kind:String(simple.kind||'other'),name:String(simple.name||'').trim(),role:String(simple.role||'').trim(),appearance:String(simple.appearance||'').trim(),personality:String(simple.personality||'').trim(),ability:String(simple.ability||'').trim(),relation:String(simple.relation||'').trim(),debut:String(simple.debut||'').trim(),notes:String(simple.notes||'').trim(),include:simple.include!==false};}
+      if(simple.kind&&simple.name&&!simple.npc&&!simple.档案){return {kind:String(simple.kind||'other'),name:String(simple.name||'').trim(),role:String(simple.role||'').trim(),appearance:String(simple.appearance||'').trim(),personality:String(simple.personality||'').trim(),interaction:String(simple.interaction||'').trim(),voice:['可言语','不言语'].indexOf(String(simple.voice||''))>=0?String(simple.voice):'',status:String(simple.status||'').trim(),bond:Math.max(0,Math.min(100,Math.round(xywsNpcNum(simple.bond,0)))),ability:String(simple.ability||'').trim(),relation:String(simple.relation||'').trim(),debut:String(simple.debut||'').trim(),notes:String(simple.notes||'').trim(),include:simple.include!==false};}
       var src=xywsNormalizeNpcSource(raw,w||{type:'NPC',title:''}),rec=src.npc||{},d=rec.档案||{},rel=rec.关系||{},nt=xywsNpcNotes(src.notes),skillNames=Object.keys(rec.招式||{}).slice(0,3),skill=skillNames.map(function(n){var a=rec.招式[n]||{};return n+(a.效果?'：'+a.效果:'');}).join('；'),notes=[];
       [['背景',nt.background],['动机',nt.motivation],['习惯',nt.habits],['弱点',nt.weakness],['战斗方式',nt.combatStyle],['核心设定',nt.origin],['补充',nt.freeform],['剧情钩子',rel.钩子],['秘密',rel.秘密]].forEach(function(x){if(x[1])notes.push(x[0]+'：'+x[1]);});
       var text=[d.种族,d.身份,d.阵营,w&&w.title].filter(Boolean).join(' ');
-      return {kind:xywsSupportKindGuess(text),name:String(d.姓名||src.name||(w&&w.title)||'未命名生灵').trim(),role:[d.种族,d.身份,d.阵营].filter(Boolean).join(' · '),appearance:String(d.外貌||'').trim(),personality:String(nt.personality||nt.speech||'').trim(),ability:[d.能力系别,skill].filter(Boolean).join('；'),relation:String(rel.与主角关系||'').trim(),debut:String(src.debut||'').trim(),notes:notes.join('\n'),include:src.include!==false};
+      var sk=xywsSupportKindGuess(text),ssp=rec.星灵||{};return {kind:sk,name:String((sk==='spirit'&&ssp.名号)||d.姓名||src.name||(w&&w.title)||'未命名生灵').trim(),role:[d.种族,d.身份,d.阵营].filter(Boolean).join(' · '),appearance:String((sk==='spirit'&&ssp.本相)||d.外貌||'').trim(),personality:String((sk==='spirit'&&ssp.性格)||nt.personality||nt.speech||'').trim(),interaction:String(sk==='spirit'?ssp.互动方式:'').trim(),voice:sk==='spirit'?String(ssp.言语||'').trim():'',status:sk==='spirit'?String(ssp.现状||'').trim():'',bond:sk==='spirit'?Math.max(0,Math.min(100,Math.round(xywsNpcNum(ssp.羁绊,0)))):0,ability:[d.能力系别,skill].filter(Boolean).join('；'),relation:String((sk==='spirit'&&ssp.羁绊描述)||rel.与主角关系||'').trim(),debut:String(src.debut||'').trim(),notes:notes.join('\n'),include:src.include!==false};
     }
     function xywsWorkSupportSources(w){var src=(Array.isArray(w&&w.source)&&w.source.length)?w.source:[{}],out=[];for(var i=0;i<src.length;i++)out.push(xywsNormalizeSupportSource(src[i],w));return out;}
-    function xywsSupportText(p){p=xywsNormalizeSupportSource(p,{type:'NPC',title:p&&p.name});var L=['类型：'+xywsSupportKindLabel(p.kind)];function add(k,v){if(String(v||'').trim())L.push(k+'：'+String(v).trim());}add('名称',p.name);add('定位 / 身份',p.role);add('外貌',p.appearance);add('性格 / 行为',p.personality);add('能力 / 危险点',p.ability);add('与主角关系 / 用途',p.relation);add('登场方式',p.debut);add('补充',p.notes);return L.join('\n');}
-    function xywsInstallSupport(w){var src=xywsWorkSupportSources(w);if(!src.length)return {ok:false,msg:'这个生灵 / 配角没有可用内容'};var blocks=src.map(function(p){return '【星海工坊·生灵 / 配角设定】\n'+xywsSupportText(p)+'\n\n【使用约束】这是轻量配角 / 生灵设定：不要写入 /重要人物，不进入 NPC 控制台，不新建 MVU 字段。按剧情需要临时使用即可；如果以后要把其中某个角色升格为长期重要人物，请玩家另存为“人物”作品。';});if(!xywsWriteToChat(blocks.join('\n\n')))return {ok:false,msg:'没有找到酒馆聊天输入框'};return {ok:true,msg:'生灵 / 配角设定已写入聊天框；它不会进入重要人物变量，请检查后发送'};}
+    function xywsSupportText(p){p=xywsNormalizeSupportSource(p,{type:'NPC',title:p&&p.name});var L=['类型：'+xywsSupportKindLabel(p.kind)];function add(k,v){if(String(v||'').trim())L.push(k+'：'+String(v).trim());}add('名称',p.name);add('定位 / 身份',p.role);add('外貌 / 本相',p.appearance);add('性格 / 行为',p.personality);if(p.kind==='spirit'){add('互动方式',p.interaction);add('言语',p.voice);add('现状',p.status);if(p.bond)add('羁绊',p.bond);}add('能力 / 危险点',p.ability);add('与主角关系 / 用途',p.relation);add('登场方式',p.debut);add('补充',p.notes);return L.join('\n');}
+    async function xywsInstallSupport(w){
+      var src=xywsWorkSupportSources(w);if(!src.length)return {ok:false,msg:'这个生灵 / 配角没有可用内容'};var spirits=src.filter(function(p){return p.kind==='spirit';}),others=src.filter(function(p){return p.kind!=='spirit';}),msgs=[];
+      if(spirits.length){
+        if(spirits.length>1)return {ok:false,msg:'主角当前只有一个星灵伙伴槽；请一次安装一个星灵作品'};
+        var p=spirits[0],M=xywsResolveMvu();if(!M)return {ok:false,msg:'没有找到 MVU 写入接口；无法把星灵安装为主角核心伙伴'};var opt={type:'message',message_id:'latest'},oldData=null;try{oldData=M.getMvuData(opt);}catch(e){}if(!oldData||!oldData.stat_data)return {ok:false,msg:'当前楼层还没有可写入的 MVU 数据'};var main=oldData.stat_data.主角||{},md=main.档案||{},mt=[md.种族,md.身份].join(' ');if(/魔人|魔物|魔族|恶魔|深渊|渊裔|寄生体|化形种|原生种|双形种/.test(mt))return {ok:false,msg:'当前主角是魔人 / 魔物体系，不使用星灵伙伴槽；请把该作品作为普通配角设定使用'};var next=xywsClone(oldData);if(!next||!next.stat_data)return {ok:false,msg:'复制当前 MVU 数据失败'};
+        var cur=(next.stat_data.主角&&next.stat_data.主角.星灵&&typeof next.stat_data.主角.星灵==='object')?next.stat_data.主角.星灵:{};if(!next.stat_data.主角||typeof next.stat_data.主角!=='object')next.stat_data.主角={};
+        var star={名号:String(p.name||cur.名号||'').trim(),本相:String(p.appearance||cur.本相||'').trim(),现状:String(p.status||cur.现状||'').trim(),蚀相:String(cur.蚀相||'').trim(),言语:String(p.voice||cur.言语||'').trim(),羁绊:p.bond?Math.max(0,Math.min(100,Math.round(Number(p.bond)||0))):(Number(cur.羁绊)||0),羁绊描述:String(p.relation||cur.羁绊描述||'').trim(),性格:String(p.personality||cur.性格||'').trim(),互动方式:String(p.interaction||cur.互动方式||'').trim()};
+        next.stat_data.主角.星灵=star;try{await M.replaceMvuData(next,opt);}catch(ex){return {ok:false,msg:'星灵伙伴写入失败：'+(ex&&ex.message?ex.message:'未知错误')};}msgs.push('已安装主角星灵伙伴：'+(star.名号||p.name));
+      }
+      if(others.length){var blocks=others.map(function(p){return '【星海工坊·生灵 / 配角设定】\n'+xywsSupportText(p)+'\n\n【使用约束】这是轻量配角 / 生灵设定：不要写入 /重要人物，不进入 NPC 控制台，不新建 MVU 字段。按剧情需要临时使用即可；如果以后要把其中某个角色升格为长期重要人物，请玩家另存为“人物”作品。';});if(!xywsWriteToChat(blocks.join('\n\n')))return {ok:false,msg:(msgs.length?msgs.join('；')+'；':'')+'其他配角未能写入聊天框'};msgs.push('其他生灵 / 配角设定已写入聊天框，请检查后发送');}
+      return {ok:true,msg:msgs.join('；')||'已加入本局'};
+    }
     function xywsWorkNpcSources(w){
       var src=(Array.isArray(w&&w.source)&&w.source.length)?w.source:[null],out=[];for(var i=0;i<src.length;i++)out.push(xywsNormalizeNpcSource(src[i],w));return out;
     }
@@ -670,16 +758,14 @@
       if(!oldData||!oldData.stat_data)return {ok:false,msg:'当前楼层还没有可写入的 MVU 数据'};
       var next=xywsClone(oldData);if(!next||!next.stat_data)return {ok:false,msg:'复制当前 MVU 数据失败'};
       if(!next.stat_data.重要人物||typeof next.stat_data.重要人物!=='object'||Array.isArray(next.stat_data.重要人物))next.stat_data.重要人物={};
-      var src=xywsWorkNpcSources(w),names=[],noteBlocks=[];
+      var src=xywsWorkNpcSources(w),names=[];
       for(var i=0;i<src.length;i++){
         var rec=xywsNpcRecord(src[i],w),base=String(rec.档案.姓名||'').trim();
         if(!base){return {ok:false,msg:'人物姓名为空，无法直接建立 /重要人物/<姓名>；请先补名后再安装'};}
         var key=xywsUniqueNpcKey(next.stat_data.重要人物,base);rec.档案.姓名=key;if(!rec.状态.处境)rec.状态.处境='已由星海工坊加入·待登场';next.stat_data.重要人物[key]=rec;names.push(key);
-        var nb=xywsNpcNarrativePrompt(key,src[i]&&src[i].notes);if(nb)noteBlocks.push(nb);
       }
       try{await M.replaceMvuData(next,opt);}catch(ex){return {ok:false,msg:'MVU 写入失败：'+(ex&&ex.message?ex.message:'未知错误')};}
-      var noteWritten=noteBlocks.length?xywsWriteToChat(noteBlocks.join('\n\n')):false;
-      return {ok:true,msg:'已加入长期重要人物：'+names.join('、')+(noteBlocks.length?(noteWritten?'；补充叙事设定已写入聊天框，请检查后发送':'；该作品另含叙事设定，但当前没有找到聊天输入框'):'')};
+      return {ok:true,msg:'已加入长期重要人物：'+names.join('、')+'；性格、言行、背景等已写入长期人设变量'};
     }
     function xywsResolveOpeningRosterBridge(){
       var cand=[];
@@ -876,7 +962,7 @@
       if(!currentWork||currentWork.type!=='角色')return;var target=currentWork,r=mode==='opening'?xywsInstallNpcOpening(target):await xywsInstallNpc(target);if(r&&r.ok){rememberInstalled(target);xywsTrackCloudDownload(target);toast(r.msg||(mode==='opening'?'已加入开局重要人物名册':'已中途加入本局'));}else toast((r&&r.msg)||'人物加入失败');
     }
     async function installCurrent(){
-      if(!currentWork)return;var r;if(currentWork.type==='开局')r=xywsInstallOpening(currentWork);else if(currentWork.type==='规则')r=xywsInstallRule(currentWork);else if(currentWork.type==='玩法')r=await xywsInstallPlay(currentWork);else if(currentWork.type==='装束')r=await xywsInstallOutfit(currentWork);else if(currentWork.type==='能力')r=await xywsInstallAbility(currentWork);else if(currentWork.type==='物品')r=await xywsInstallItem(currentWork);else if(currentWork.type==='NPC')r=xywsInstallSupport(currentWork);else if(currentWork.type==='角色'){await installPerson('now');return;}else{toast('这个作品类型暂未接入真实导入');return;}if(r&&r.ok){var installedWork=currentWork;rememberInstalled(installedWork);xywsTrackCloudDownload(installedWork);toast(r.msg||'已加入本局');if(installedWork.type==='规则'||installedWork.type==='玩法')openDetail(installedWork.id);}else toast((r&&r.msg)||'加入本局失败');
+      if(!currentWork)return;var r;if(currentWork.type==='开局')r=xywsInstallOpening(currentWork);else if(currentWork.type==='规则')r=xywsInstallRule(currentWork);else if(currentWork.type==='玩法')r=await xywsInstallPlay(currentWork);else if(currentWork.type==='装束')r=await xywsInstallOutfit(currentWork);else if(currentWork.type==='能力')r=await xywsInstallAbility(currentWork);else if(currentWork.type==='物品')r=await xywsInstallItem(currentWork);else if(currentWork.type==='NPC')r=await xywsInstallSupport(currentWork);else if(currentWork.type==='角色'){await installPerson('now');return;}else{toast('这个作品类型暂未接入真实导入');return;}if(r&&r.ok){var installedWork=currentWork;rememberInstalled(installedWork);xywsTrackCloudDownload(installedWork);toast(r.msg||'已加入本局');if(installedWork.type==='规则'||installedWork.type==='玩法')openDetail(installedWork.id);}else toast((r&&r.msg)||'加入本局失败');
     }
     function renderFavs(){
       var ids=arr(LS_FAV), a=ids.map(byId).filter(Boolean);
@@ -972,9 +1058,8 @@
     function xywsWorldbookWork(e,targetType,idx){
       // 世界书原文必须逐字保留。这里只用 trim() 判断是否为空，绝不把 trim() 后的结果写回正文。
       var content=String((e&&e.content)||''),title=xywsWorldbookTitle(e,idx),origin='stwb:'+xywsHash(String((e&&e.uid)||idx)+'|'+title+'|'+content),w={id:xywsImportedId({originId:origin,title:title},idx),xywsOriginId:origin,xywsImported:true,xywsImportFormat:'sillytavern.worldbook',xywsRawContent:content,xywsAuthor:'',type:targetType,icon:ICON[targetType]||'✦',title:title,desc:'',tags:['酒馆世界书'],likes:0,uses:0,created:Date.now(),body:content,source:[]};
-      if(targetType==='角色'||targetType==='NPC'){
-        var pk=targetType==='角色'?'mahou':'other',pr=xywsSanitizeNpcRecord({档案:{姓名:title,种族:targetType==='角色'?'魔法少女':'异种生命',身份:''},关系:{与主角关系:'',钩子:'',秘密:''}},pk);w.source=[xywsNpcSourceFromRecord(pr,pk,'',{freeform:content})];
-      }
+      if(targetType==='角色')w.source=[xywsPersonTextSeed(title,content)];
+      else if(targetType==='NPC')w.source=[xywsSupportTextSeed(title,content)];
       else if(targetType==='开局')w.source=String(content).trim()?[content]:[];
       else if(targetType==='规则')w.source=[{id:'stwb_rule_'+idx,text:content,on:true,xywsPreserveRaw:true}];
       else if(targetType==='装束')w.outfit={description:content};
@@ -1107,19 +1192,19 @@
       d.姓名=name;d.代号=xywsNpcField('alias');d.性别=xywsNpcField('gender');d.种族=xywsNpcField('race')||xywsNpcRaceForKind(kind);d.真实年龄=age;d.表观年龄=age;d.身份=xywsNpcField('identity');d.阵营=xywsNpcField('camp');d.能力系别=xywsNpcField('school');d.外貌=xywsNpcField('look');
       if(levelRaw){var lv=Number(levelRaw);if(!Number.isFinite(lv)||Math.round(lv)!==lv||lv<1||lv>70)return {ok:false,msg:'等级请填写 1～70 的整数；不知道就留空'};w.等级=lv;w.层级声明='';}else if(!legacy){w.等级=0;w.层级声明='';}
       st.战服=xywsNpcField('battlewear');st.处境=xywsNpcField('situation');st.位置=xywsNpcField('location');co.阶段=xywsNpcField('corruption')||'未染';r.与主角关系=xywsNpcField('relation');r.钩子=xywsNpcField('hook');r.秘密=xywsNpcField('secret');
-      rec=xywsSanitizeNpcRecord(rec,kind);var notes=xywsNpcNotes({personality:xywsNpcField('personality'),background:xywsNpcField('background'),combatStyle:xywsNpcField('combatStyle'),freeform:xywsNpcField('freeform')});var source=xywsNpcSourceFromRecord(rec,kind,xywsNpcField('debut'),notes);return {ok:true,source:source,data:{},body:xywsNpcRecordText(rec,notes)};
+      rec=xywsSanitizeNpcRecord(rec,kind);var notes=xywsNpcNotes({personality:xywsNpcField('personality'),background:xywsNpcField('background'),combatStyle:xywsNpcField('combatStyle'),freeform:xywsNpcField('freeform')});var source=xywsNpcSourceFromRecord(rec,kind,xywsNpcField('debut'),notes);return {ok:true,source:source,data:{},body:xywsNpcRecordText(source.npc,source.notes)};
     }
     function xywsPopulateNpcPublish(raw,workType){
-      var src=xywsNormalizeNpcSource(raw,{type:'角色',title:(raw&&raw.name)||''}),rec=src.npc,d=rec.档案,w=rec.战力,st=rec.状态,co=rec.侵蚀,r=rec.关系,notes=xywsNpcNotes(src.notes);overlay.__xywsNpcLegacySource=xywsClone(src);
-      xywsNpcSetField('kind',src.kind);xywsNpcSetField('name',d.姓名);xywsNpcSetField('identity',d.身份);xywsNpcSetField('relation',r.与主角关系);xywsNpcSetField('school',d.能力系别);xywsNpcSetField('battlewear',st.战服);xywsNpcSetField('combatStyle',notes.combatStyle);xywsNpcSetField('look',d.外貌);xywsNpcSetField('personality',notes.personality);xywsNpcSetField('alias',d.代号);xywsNpcSetField('gender',d.性别);xywsNpcSetField('race',d.种族);xywsNpcSetField('age',d.真实年龄||d.表观年龄||'');xywsNpcSetField('camp',d.阵营);xywsNpcSetField('level',w.等级||'');xywsNpcSetField('location',st.位置);xywsNpcSetField('corruption',co.阶段||'未染');xywsNpcSetField('debut',src.debut||'');xywsNpcSetField('situation',st.处境);xywsNpcSetField('background',notes.background);xywsNpcSetField('hook',r.钩子);xywsNpcSetField('secret',r.秘密);xywsNpcSetField('freeform',notes.freeform);
+      var src=xywsNormalizeNpcSource(raw,{type:'角色',title:(raw&&raw.name)||''}),rec=src.npc,d=rec.档案,ps=rec.人设||{},w=rec.战力,st=rec.状态,co=rec.侵蚀,r=rec.关系,notes=xywsNpcNotes(src.notes);overlay.__xywsNpcLegacySource=xywsClone(src);
+      xywsNpcSetField('kind',src.kind);xywsNpcSetField('name',d.姓名);xywsNpcSetField('identity',d.身份);xywsNpcSetField('relation',r.与主角关系);xywsNpcSetField('school',d.能力系别);xywsNpcSetField('battlewear',st.战服);xywsNpcSetField('combatStyle',ps.言行模式||notes.combatStyle);xywsNpcSetField('look',d.外貌);xywsNpcSetField('personality',ps.性格||notes.personality);xywsNpcSetField('alias',d.代号);xywsNpcSetField('gender',d.性别);xywsNpcSetField('race',d.种族);xywsNpcSetField('age',d.真实年龄||d.表观年龄||'');xywsNpcSetField('camp',d.阵营);xywsNpcSetField('level',w.等级||'');xywsNpcSetField('location',st.位置);xywsNpcSetField('corruption',co.阶段||'未染');xywsNpcSetField('debut',src.debut||'');xywsNpcSetField('situation',st.处境);xywsNpcSetField('background',ps.背景要点||notes.background);xywsNpcSetField('hook',r.钩子);xywsNpcSetField('secret',r.秘密);xywsNpcSetField('freeform',ps.补充设定||notes.freeform);
     }
-    function xywsNpcPublishHtml(){return '<div class="xyws-source"><b>人物 = 长期重要人物。</b> 魔法少女、魔人和关键凡人放这里；星灵、魔物、使魔、灵兽、路人请发到“生灵 / 配角”。除姓名外都可留空，输入框会直接对应现有合法字段，不让 AI 猜分类。</div><div class="xyws-field"><label>人物类型</label><select data-npc="kind"><option value="mahou">魔法少女 / 守护者</option><option value="demon">魔人</option><option value="mortal">关键凡人</option><option value="other">其他重要人物</option></select></div><details class="xyws-npcsec" open><summary>常用信息</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>姓名</label><input data-npc="name"></div><div class="xyws-field"><label>身份 / 职业</label><input data-npc="identity" placeholder="学生、研究员、游荡魔人……"></div><div class="xyws-field"><label>与主角关系</label><input data-npc="relation" placeholder="队友、对手、同学……"></div><div class="xyws-field"><label>等级（1～70，选填）</label><input data-npc="level" inputmode="numeric" placeholder="不知道就留空"></div><div class="xyws-field"><label>能力系别 / 本能</label><input data-npc="school" placeholder="感知系、空间系、蚀心·精神……"></div><div class="xyws-field"><label>当前装束 / 武装</label><input data-npc="battlewear"></div></div><div class="xyws-source">等级会由现有星辉内核自动换算阶级 / 位格，不用自己配。Lv1–10＝见习 / 孳生体；11–25＝正式 / 蚀魂者；26–40＝精英 / 化渊者；41–55＝战姬 / 噬星者；56–70＝传奇 / 渊厄。关键凡人不知道等级可以直接留空。</div><div class="xyws-field"><label>外貌</label><textarea data-npc="look" placeholder="一两句整体特征即可"></textarea></div><div class="xyws-field"><label>性格 / 行为</label><textarea data-npc="personality" placeholder="叙事硬设定；不会创建假变量"></textarea></div></details><details class="xyws-npcsec"><summary>更多选填</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>代号 / 称号</label><input data-npc="alias"></div><div class="xyws-field"><label>性别</label><input data-npc="gender"></div><div class="xyws-field"><label>种族</label><input data-npc="race"></div><div class="xyws-field"><label>年龄</label><input data-npc="age" inputmode="numeric" placeholder="数字；会同时用于真实/表观年龄"></div><div class="xyws-field"><label>阵营</label><input data-npc="camp"></div><div class="xyws-field"><label>当前位置</label><input data-npc="location"></div><div class="xyws-field"><label>侵蚀阶段</label><select data-npc="corruption"><option value="未染">未染</option><option>初蚀</option><option>沉沦</option><option>半堕</option><option>恶堕</option></select></div><div class="xyws-field"><label>登场安排</label><input data-npc="debut" placeholder="仅登记 / 自然安排 / 尽快登场"></div></div><div class="xyws-field"><label>当前处境</label><textarea data-npc="situation"></textarea></div><div class="xyws-field"><label>战斗方式 / 行动偏好</label><textarea data-npc="combatStyle"></textarea></div><div class="xyws-field"><label>背景 / 经历</label><textarea data-npc="background" placeholder="叙事硬设定，不新增变量路径"></textarea></div><div class="xyws-field"><label>剧情钩子（只有真正伏笔才填）</label><textarea data-npc="hook"></textarea></div><div class="xyws-field"><label>秘密（只有确实隐瞒的事实才填）</label><textarea data-npc="secret"></textarea></div><div class="xyws-field"><label>其他补充</label><textarea data-npc="freeform" placeholder="只作为叙事补充，不让 AI 自动猜变量"></textarea></div></details>';}
+    function xywsNpcPublishHtml(){return '<div class="xyws-source"><b>人物 = 长期重要人物。</b> 魔法少女、魔人和关键凡人放这里；星灵、魔物、使魔、灵兽、路人请发到“生灵 / 配角”。除姓名外都可留空，输入框会直接对应现有合法字段，不让 AI 猜分类。</div><div class="xyws-field"><label>人物类型</label><select data-npc="kind"><option value="mahou">魔法少女 / 守护者</option><option value="demon">魔人</option><option value="mortal">关键凡人</option><option value="other">其他重要人物</option></select></div><details class="xyws-npcsec" open><summary>常用信息</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>姓名</label><input data-npc="name"></div><div class="xyws-field"><label>身份 / 职业</label><input data-npc="identity" placeholder="学生、研究员、游荡魔人……"></div><div class="xyws-field"><label>与主角关系</label><input data-npc="relation" placeholder="队友、对手、同学……"></div><div class="xyws-field"><label>等级（1～70，选填）</label><input data-npc="level" inputmode="numeric" placeholder="不知道就留空"></div><div class="xyws-field"><label>能力系别 / 本能</label><input data-npc="school" placeholder="感知系、空间系、蚀心·精神……"></div><div class="xyws-field"><label>当前装束 / 武装</label><input data-npc="battlewear"></div></div><div class="xyws-source">等级会由现有星辉内核自动换算阶级 / 位格，不用自己配。Lv1–10＝见习 / 孳生体；11–25＝正式 / 蚀魂者；26–40＝精英 / 化渊者；41–55＝战姬 / 噬星者；56–70＝传奇 / 渊厄。关键凡人不知道等级可以直接留空。</div><div class="xyws-field"><label>外貌 / 体态</label><textarea data-npc="look" placeholder="一两句即可；可直接写身高、体型、三围、发色、瞳色等"></textarea></div><div class="xyws-field"><label>性格</label><textarea data-npc="personality" placeholder="会写入 人设.性格，作为长期记忆"></textarea></div></details><details class="xyws-npcsec"><summary>更多选填</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>代号 / 称号</label><input data-npc="alias"></div><div class="xyws-field"><label>性别</label><input data-npc="gender"></div><div class="xyws-field"><label>种族</label><input data-npc="race"></div><div class="xyws-field"><label>年龄</label><input data-npc="age" inputmode="numeric" placeholder="数字；会同时用于真实/表观年龄"></div><div class="xyws-field"><label>阵营</label><input data-npc="camp"></div><div class="xyws-field"><label>当前位置</label><input data-npc="location"></div><div class="xyws-field"><label>侵蚀阶段</label><select data-npc="corruption"><option value="未染">未染</option><option>初蚀</option><option>沉沦</option><option>半堕</option><option>恶堕</option></select></div><div class="xyws-field"><label>登场安排</label><input data-npc="debut" placeholder="仅登记 / 自然安排 / 尽快登场"></div></div><div class="xyws-field"><label>当前处境</label><textarea data-npc="situation"></textarea></div><div class="xyws-field"><label>言行模式 / 行动偏好</label><textarea data-npc="combatStyle" placeholder="会写入 人设.言行模式；说话、做事和压力下反应都可写"></textarea></div><div class="xyws-field"><label>背景要点</label><textarea data-npc="background" placeholder="会写入 人设.背景要点；只写长期影响选择的经历 / 动机"></textarea></div><div class="xyws-field"><label>剧情钩子（只有真正伏笔才填）</label><textarea data-npc="hook"></textarea></div><div class="xyws-field"><label>秘密（只有确实隐瞒的事实才填）</label><textarea data-npc="secret"></textarea></div><div class="xyws-field"><label>其他长期设定</label><textarea data-npc="freeform" placeholder="会写入 人设.补充设定；不属于钩子 / 秘密的硬设定放这里"></textarea></div></details>';}
 
     function xywsSupportField(name){var e=$('[data-support="'+name+'"]');return e?String(e.value||'').trim():'';}
     function xywsSupportSetField(name,v){var e=$('[data-support="'+name+'"]');if(e)e.value=v==null?'':String(v);}
-    function xywsSupportPublishHtml(){return '<div class="xyws-source"><b>生灵 / 配角 = 轻量设定。</b> 适合星灵、魔物、使魔、灵兽、路人和一次性配角。它不会写入 <b>/重要人物</b>，也不会进入 NPC 控制台；通常填名称 + 一两项特征就够了。</div><div class="xyws-pubgrid"><div class="xyws-field"><label>类型</label><select data-support="kind"><option value="spirit">星灵</option><option value="monster">魔物</option><option value="familiar">使魔</option><option value="beast">灵兽 / 异种生物</option><option value="mortal">普通人 / 路人</option><option value="other">其他配角</option></select></div><div class="xyws-field"><label>名称</label><input data-support="name"></div></div><div class="xyws-field"><label>一句话定位 / 身份（选填）</label><input data-support="role" placeholder="例如：会说话的银羽星灵 / 废墟里的巡游魔物"></div><div class="xyws-pubgrid"><div class="xyws-field"><label>外貌（选填）</label><textarea data-support="appearance"></textarea></div><div class="xyws-field"><label>性格 / 行为（选填）</label><textarea data-support="personality"></textarea></div><div class="xyws-field"><label>能力 / 危险点（选填）</label><textarea data-support="ability"></textarea></div><div class="xyws-field"><label>与主角关系 / 剧情用途（选填）</label><textarea data-support="relation"></textarea></div></div><details class="xyws-npcsec"><summary>更多选填</summary><div class="xyws-field"><label>登场方式</label><input data-support="debut"></div><div class="xyws-field"><label>补充设定</label><textarea data-support="notes"></textarea></div></details>';}
-    function xywsSupportReadPublish(){var name=xywsSupportField('name');if(!name)return {ok:false,msg:'请填写生灵 / 配角名称'};var src={kind:xywsSupportField('kind')||'other',name:name,role:xywsSupportField('role'),appearance:xywsSupportField('appearance'),personality:xywsSupportField('personality'),ability:xywsSupportField('ability'),relation:xywsSupportField('relation'),debut:xywsSupportField('debut'),notes:xywsSupportField('notes'),include:true};return {ok:true,source:src,data:{},body:xywsSupportText(src)};}
-    function xywsPopulateSupportPublish(raw,w){var p=xywsNormalizeSupportSource(raw,w||{type:'NPC'});['kind','name','role','appearance','personality','ability','relation','debut','notes'].forEach(function(k){xywsSupportSetField(k,p[k]);});}
+    function xywsSupportPublishHtml(){return '<div class="xyws-source"><b>生灵 / 配角 = 轻量设定。</b> 魔物、使魔、灵兽、路人仍不写入 <b>/重要人物</b>。<b>星灵例外：</b>安装星灵作品时，会把它作为主角自己的核心伙伴写入 <b>/主角/星灵</b>。</div><div class="xyws-pubgrid"><div class="xyws-field"><label>类型</label><select data-support="kind"><option value="spirit">星灵（安装为主角伙伴）</option><option value="monster">魔物</option><option value="familiar">使魔</option><option value="beast">灵兽 / 异种生物</option><option value="mortal">普通人 / 路人</option><option value="other">其他配角</option></select></div><div class="xyws-field"><label>名称</label><input data-support="name"></div></div><div class="xyws-field"><label>一句话定位 / 身份（选填）</label><input data-support="role" placeholder="例如：银羽星灵 / 废墟里的巡游魔物"></div><div class="xyws-pubgrid"><div class="xyws-field"><label>外貌 / 本相（选填）</label><textarea data-support="appearance"></textarea></div><div class="xyws-field"><label>性格 / 行为（选填）</label><textarea data-support="personality"></textarea></div><div class="xyws-field"><label>能力 / 危险点（选填）</label><textarea data-support="ability"></textarea></div><div class="xyws-field"><label>与主角关系 / 剧情用途（选填）</label><textarea data-support="relation"></textarea></div></div><details class="xyws-npcsec"><summary>星灵伙伴专用（其他类型可留空）</summary><div class="xyws-pubgrid"><div class="xyws-field"><label>互动方式</label><input data-support="interaction" placeholder="毒舌提醒 / 安静陪伴 / 只用意象传意……"></div><div class="xyws-field"><label>言语</label><select data-support="voice"><option value="">不指定</option><option value="可言语">可言语</option><option value="不言语">不言语</option></select></div><div class="xyws-field"><label>羁绊（0～100，选填）</label><input data-support="bond" inputmode="numeric"></div><div class="xyws-field"><label>现状（选填）</label><input data-support="status" placeholder="安栖于星器 / 受损 / 护持中……"></div></div></details><details class="xyws-npcsec"><summary>更多选填</summary><div class="xyws-field"><label>登场方式</label><input data-support="debut"></div><div class="xyws-field"><label>补充设定</label><textarea data-support="notes"></textarea></div></details>';}
+    function xywsSupportReadPublish(){var name=xywsSupportField('name');if(!name)return {ok:false,msg:'请填写生灵 / 配角名称'};var src={kind:xywsSupportField('kind')||'other',name:name,role:xywsSupportField('role'),appearance:xywsSupportField('appearance'),personality:xywsSupportField('personality'),interaction:xywsSupportField('interaction'),voice:xywsSupportField('voice'),status:xywsSupportField('status'),bond:Math.max(0,Math.min(100,Math.round(xywsNpcNum(xywsSupportField('bond'),0)))),ability:xywsSupportField('ability'),relation:xywsSupportField('relation'),debut:xywsSupportField('debut'),notes:xywsSupportField('notes'),include:true};return {ok:true,source:src,data:{},body:xywsSupportText(src)};}
+    function xywsPopulateSupportPublish(raw,w){var p=xywsNormalizeSupportSource(raw,w||{type:'NPC'});['kind','name','role','appearance','personality','interaction','voice','status','bond','ability','relation','debut','notes'].forEach(function(k){xywsSupportSetField(k,p[k]);});}
     function xywsAutoAbilityName(a){
       a=a||{};var manual=String(a.skillName||'').trim();if(manual)return manual.slice(0,60);
       var school=String(a.school||'').trim().replace(/系$/,'');if(school==='未分类')school='';var stype=String(a.skillType||'').trim();
@@ -1145,7 +1230,7 @@
       var typed=String(($('[data-pubname]')||{}).value||'').trim();if(type==='角色')return String(ex.source&&ex.source.npc&&ex.source.npc.档案&&ex.source.npc.档案.姓名||typed||'').trim();if(type==='NPC')return String(ex.source&&ex.source.name||typed||'').trim();if(type==='能力'){var a=ex.data.ability||{};return String(xywsAutoAbilityName(a)).slice(0,120);}if(type==='装束')return typed||('变身装束 · '+xywsExcerpt(ex.body,18));if(type==='物品')return typed;if(type==='开局')return typed||xywsExcerpt(picked[0]||'',28)||'未命名开局';if(type==='规则'){var rr=picked[0];return typed||('规则 · '+xywsExcerpt(rr&&rr.text?rr.text:rr,24));}if(type==='玩法')return typed||'未命名玩法';return typed||'未命名作品';
     }
     function xywsAutoSummary(type,title,picked,ex){
-      if(type==='角色'){var r=ex.source.npc,d=r.档案,st=r.状态,rel=r.关系,nt=xywsNpcNotes(ex.source.notes);return xywsExcerpt([d.种族,d.身份,d.能力系别,st.战服,rel.与主角关系,nt.personality,d.外貌].filter(Boolean).join(' · '),84);}if(type==='NPC'){var p=ex.source||{};return xywsExcerpt([xywsSupportKindLabel(p.kind),p.role,p.personality,p.ability,p.relation].filter(Boolean).join(' · '),84);}if(type==='能力'){var a=ex.data.ability||{};return xywsExcerpt([a.skillName,a.school,a.skillType,a.effect].filter(Boolean).join(' · '),84);}if(type==='物品'){var it=ex.data.item||{};return xywsExcerpt([it.category,'×'+(it.quantity||1),it.description].filter(Boolean).join(' · '),84);}return xywsExcerpt(ex.body||(picked&&picked[0]&&picked[0].text)||picked&&picked[0]||title,84);
+      if(type==='角色'){var r=ex.source.npc,d=r.档案,ps=r.人设||{},st=r.状态,rel=r.关系;return xywsExcerpt([d.种族,d.身份,d.能力系别,st.战服,rel.与主角关系,ps.性格,d.外貌].filter(Boolean).join(' · '),84);}if(type==='NPC'){var p=ex.source||{};return xywsExcerpt([xywsSupportKindLabel(p.kind),p.role,p.personality,p.ability,p.relation].filter(Boolean).join(' · '),84);}if(type==='能力'){var a=ex.data.ability||{};return xywsExcerpt([a.skillName,a.school,a.skillType,a.effect].filter(Boolean).join(' · '),84);}if(type==='物品'){var it=ex.data.item||{};return xywsExcerpt([it.category,'×'+(it.quantity||1),it.description].filter(Boolean).join(' · '),84);}return xywsExcerpt(ex.body||(picked&&picked[0]&&picked[0].text)||picked&&picked[0]||title,84);
     }
     function xywsConfigurePublishChrome(type){
       var nw=$('[data-pubname-wrap]'),dw=$('[data-pubdesc-wrap]'),nl=$('[data-pubnamelabel]'),dl=$('[data-pubdesclabel]');if(nw)nw.style.display='';if(dw)dw.style.display=(type==='玩法'||type==='开局'||type==='规则')?'':'none';if(nl)nl.textContent='作品名称';if(dl)dl.textContent='内容 / 正文';
@@ -1160,7 +1245,7 @@
     function openPublish(type){
       pubType=type;xywsPublishMode='create';xywsEditingWork=null;overlay.__xywsNpcLegacySource=null;var needsPicker=type==='角色'||type==='规则';overlay.__xywsSources=needsPicker?pubSource(type):[];overlay.__xywsPickedIds=[];overlay.__xywsImportSeed=null;
       var title=type==='角色'?'发布人物':(type==='NPC'?'发布生灵 / 配角':(type==='开局'?'发布开局':(type==='玩法'?'创建玩法':(type==='装束'?'发布变身装束':(type==='能力'?'发布能力 / 招式':(type==='物品'?'发布物品':'发布'+type))))));$('[data-pubtitle]').textContent=title;
-      $('[data-pubhint]').textContent=type==='角色'?'人物只保留长期重要人物所需的常用字段；星灵、魔物、使魔、路人请使用“生灵 / 配角”。除姓名外都可不填。':(type==='NPC'?'轻量配角通常写名称 + 一两项特征就够了；不会进入重要人物变量或 NPC 控制台。':(type==='玩法'?'写清核心玩法、推进方式、失败后果与 AI 边界即可。':(type==='开局'?'写清时间地点、玩家现状、事件引子与 AI 边界即可。':(type==='装束'?'先写整体描述；确有需要再展开少量补充。':(type==='能力'?'按现有招式变量填写档位、系别、类型、蓝耗和效果；名称可留空，发布时自动生成。':(type==='物品'?'名称 + 作用通常就够了。':'写清规则本身；条件与例外按需补充。'))))));
+      $('[data-pubhint]').textContent=type==='角色'?'人物只保留长期重要人物所需的常用字段；星灵、魔物、使魔、路人请使用“生灵 / 配角”。除姓名外都可不填。':(type==='NPC'?'轻量配角通常写名称 + 一两项特征就够了；魔物 / 使魔 / 路人不进入重要人物，星灵作品安装时会写入主角自己的星灵伙伴变量。':(type==='玩法'?'写清核心玩法、推进方式、失败后果与 AI 边界即可。':(type==='开局'?'写清时间地点、玩家现状、事件引子与 AI 边界即可。':(type==='装束'?'先写整体描述；确有需要再展开少量补充。':(type==='能力'?'按现有招式变量填写档位、系别、类型、蓝耗和效果；名称可留空，发布时自动生成。':(type==='物品'?'名称 + 作用通常就够了。':'写清规则本身；条件与例外按需补充。'))))));
       var pickBtn=$('[data-pickbtn]');if(pickBtn){pickBtn.style.display=needsPicker?'':'none';pickBtn.textContent='选择发布内容';}var typeWrap=$('[data-pubtype-wrap]');if(typeWrap)typeWrap.hidden=true;var pbtn=$('[data-publish-btn]');if(pbtn)pbtn.textContent='发布到云端';xywsConfigurePublishChrome(type);$('[data-pubname]').value='';$('[data-pubsummary]').value='';$('[data-pubdesc]').value='';$('[data-pubtags]').value='';xywsRenderPublishExtra(type);
       if(type==='开局'){var cur=parseCurrent(),r=String((cur&&cur.route)||'').trim();if(!r){toast('当前没有可发布的开局');show('create');return;}overlay.__xywsSources=[{id:'current_route',label:r,value:r}];overlay.__xywsPickedIds=['current_route'];$('[data-pubdesc]').value=r;$('[data-pubdesc]').setAttribute('placeholder','【时间 / 地点】\n【玩家现状】\n【开场事件 / 引子】\n【AI边界】不要替玩家决定尚未表达的行动、选择或内心');}
       else if(type==='玩法'){$('[data-pubname]').value='我的新玩法';$('[data-pubdesc]').value='【核心玩法】\n玩家主要体验什么、平时会做什么……\n\n【如何推进】\n剧情 / 回合怎么向前走……\n\n【失败与后果】\n失败会怎样，哪些后果允许持续……\n\n【AI边界】\nAI必须遵守什么；哪些事不能替玩家决定……';}
@@ -1185,14 +1270,14 @@
     }
     function xywsRemapImportedWork(seed,targetType){
       seed=xywsClone(seed)||{};if(seed.type===targetType)return seed;var hasRaw=typeof seed.xywsRawContent==='string',raw=hasRaw?seed.xywsRawContent:String(xywsWorkBody(seed)||''),title=String(seed.title||'未命名作品').trim()||'未命名作品';var w={id:seed.id||('import_'+Date.now()),xywsImported:true,xywsImportFormat:String(seed.xywsImportFormat||''),xywsAuthor:String(seed.xywsAuthor||''),type:targetType,icon:ICON[targetType]||'✦',title:title,desc:String(seed.desc||''),tags:Array.isArray(seed.tags)?seed.tags.slice():[],likes:Number(seed.likes)||0,uses:Number(seed.uses)||0,created:seed.created||Date.now(),body:raw,source:[]};if(hasRaw)w.xywsRawContent=raw;
-      if(targetType==='角色'){var pr=xywsSanitizeNpcRecord({档案:{姓名:title,种族:'',身份:'',外貌:''},关系:{与主角关系:'',钩子:'',秘密:''}},'other');w.source=[xywsNpcSourceFromRecord(pr,'other','',{freeform:raw})];}
-      else if(targetType==='NPC'){w.source=[{kind:xywsSupportKindGuess([title,raw].join(' ')),name:title,role:'',appearance:'',personality:'',ability:'',relation:'',debut:'',notes:raw,include:true}];}
+      if(targetType==='角色'){w.source=[xywsPersonTextSeed(title,raw)];}
+      else if(targetType==='NPC'){w.source=[xywsSupportTextSeed(title,raw)];}
       else if(targetType==='开局'){w.source=String(raw).trim()?[raw]:[];}else if(targetType==='规则'){w.source=hasRaw?[{id:'import_rule_raw',text:raw,on:true,xywsPreserveRaw:true}]:xywsSplitRuleText(raw).map(function(x,i){return {id:'import_rule_'+i,text:x,on:true};});}else if(targetType==='装束'){w.outfit={description:raw};}else if(targetType==='能力'){w.ability={skillName:title,slot:'基础攻防',school:'未分类',skillType:'',mpCost:0,effect:raw};}else if(targetType==='物品'){w.item={category:hasRaw?'世界书导入':'导入作品',quantity:1,description:raw};}xywsEnsureSummary(w);return w;
     }
     function xywsPopulatePublishFromWork(w,mode){
       if(!w)return;xywsPublishMode=mode||'import-upload';xywsEditingWork=w;pubType=w.type;overlay.__xywsSources=[];overlay.__xywsPickedIds=[];overlay.__xywsNpcLegacySource=null;var typeWrap=$('[data-pubtype-wrap]'),typeSel=$('[data-pubtype]');if(typeWrap)typeWrap.hidden=xywsPublishMode!=='import-upload';if(typeSel)typeSel.value=pubType;var title=xywsPublishMode==='cloud-edit'?'编辑我的作品':'导入作品上传';$('[data-pubtitle]').textContent=title;$('[data-pubhint]').textContent=xywsPublishMode==='cloud-edit'?'修改后保存到原云端作品，不需要先删除。简介仍可留空自动生成短简介。':'发布前可修改栏目、名称、简介与内容；人物和生灵会按两套不同结构处理。';var pickBtn=$('[data-pickbtn]');if(pickBtn)pickBtn.style.display='none';xywsConfigurePublishChrome(pubType);xywsRenderPublishExtra(pubType);$('[data-pubname]').value=String(w.title||'');$('[data-pubsummary]').value=String(w.desc||'');$('[data-pubtags]').value=(w.tags||[]).join('，');$('[data-pubdesc]').value='';
       if(pubType==='玩法')$('[data-pubdesc]').value=String(w.body||'');else if(pubType==='开局')$('[data-pubdesc]').value=xywsOpeningText(w);else if(pubType==='规则')$('[data-pubdesc]').value=xywsRuleTexts(w).join('\n\n');else if(pubType==='角色'){var ps=xywsWorkNpcSources(w);if(ps.length)xywsPopulateNpcPublish(ps[0],pubType);}else if(pubType==='NPC'){var ss=xywsWorkSupportSources(w);if(ss.length)xywsPopulateSupportPublish(ss[0],w);}
-      if((pubType==='角色'||pubType==='NPC')&&xywsPublishMode==='import-upload'&&w.xywsImportFormat==='sillytavern.worldbook'){var extra=$('[data-pubextra]');if(extra){var raw=typeof w.xywsRawContent==='string'?w.xywsRawContent:String(w.body||'');extra.insertAdjacentHTML('afterbegin','<div class="xyws-field"><label>世界书原文（保留）</label><textarea data-import-raw-content></textarea><div class="xyws-source" style="margin-top:6px">原文独立保留；人物只填写合法重要人物字段，生灵只保存轻量配角设定。工坊不会自动把整段原文塞进钩子、秘密或新变量。</div></div>');var rawBox=$('[data-import-raw-content]');if(rawBox)rawBox.value=raw;}}
+      if((pubType==='角色'||pubType==='NPC')&&xywsPublishMode==='import-upload'&&w.xywsImportFormat==='sillytavern.worldbook'){var extra=$('[data-pubextra]');if(extra){var raw=typeof w.xywsRawContent==='string'?w.xywsRawContent:String(w.body||'');extra.insertAdjacentHTML('afterbegin','<div class="xyws-field"><label>世界书原文（保留）</label><textarea data-import-raw-content></textarea><div class="xyws-source" style="margin-top:6px">原文完整保留。人物导入会用固定字段名（如“性格：”“外貌：”“行为模式：”“背景：”）做非 AI 提取，写入已有合法变量；识别不到的内容只放进“其他长期设定”的精简备份，不会塞进钩子 / 秘密，也不会新造变量。</div></div>');var rawBox=$('[data-import-raw-content]');if(rawBox)rawBox.value=raw;}}
       else if(pubType==='装束'){var od=w.outfit||{};var oe=$('[data-outfit-desc]');if(oe)oe.value=String(od.description||w.body||'');}else if(pubType==='能力'){var a=w.ability||{};var an=$('[data-ability-name]'),as=$('[data-ability-slot]'),asc=$('[data-ability-school]'),at=$('[data-ability-type]'),ac=$('[data-ability-cost]'),ae=$('[data-ability-effect]');if(an)an.value=String(a.skillName||w.title||'');if(as&&a.slot)as.value=String(a.slot);if(asc)asc.value=String(a.school||'未分类');if(at)at.value=String(a.skillType||'');if(ac)ac.value=(a.mpCost===undefined||a.mpCost===null||Number.isNaN(Number(a.mpCost)))?'0':String(a.mpCost);if(ae)ae.value=String(a.effect||w.body||'');}else if(pubType==='物品'){var it=w.item||{};var ic=$('[data-item-category]'),iq=$('[data-item-qty]'),id=$('[data-item-desc]');if(ic)ic.value=String(it.category||'杂物');if(iq)iq.value=String(Number(it.quantity)||1);if(id)id.value=String(it.description||w.body||'');}
       var pbtn=$('[data-publish-btn]');if(pbtn)pbtn.textContent=xywsPublishMode==='cloud-edit'?'保存修改':'发布到云端';show('publish');
     }
