@@ -226,3 +226,13 @@
   #xyws-overlay .xyws-npcrow textarea,#xyws-overlay .xyws-npcrow-gear textarea,#xyws-overlay .xyws-npcrow-item textarea,#xyws-overlay .xyws-npcrow-body textarea{grid-column:auto}
   #xyws-overlay .xyws-npcrow .xyws-npcdel,#xyws-overlay .xyws-npcrow-gear .xyws-npcdel,#xyws-overlay .xyws-npcrow-item .xyws-npcdel,#xyws-overlay .xyws-npcrow-body .xyws-npcdel{grid-column:auto;width:auto}
 }
+
+
+/* dev.27: normal SillyTavern Extensions drawer entry + visible update badge */
+#xyws-extension-settings .inline-drawer-header b{display:flex;align-items:center;gap:7px;min-width:0}
+#xyws-extension-settings .xyws-ext-version{font-size:.78em;font-weight:500;opacity:.65}
+#xyws-extension-settings .xyws-update-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:#c83f4d;color:#fff;font-size:10px;line-height:1.4;font-weight:700;letter-spacing:.04em}
+#xyws-extension-settings .xyws-update-badge[hidden],#xyws-extension-settings [data-xyws-update][hidden]{display:none!important}
+#xyws-extension-settings .xyws-ext-actions{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0 8px}
+#xyws-extension-settings .xyws-ext-status{display:block;opacity:.72;line-height:1.45;margin-bottom:5px}
+#xyws-extension-settings .xyws-ext-update{font-weight:700}
