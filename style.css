@@ -200,6 +200,8 @@
   gap:6px;align-items:start;padding:8px;margin:7px 0;border:1px solid var(--ws-edge2);border-radius:11px;background:rgba(3,4,14,.36)
 }
 #xyws-overlay .xyws-npcrow-gear{grid-template-columns:minmax(135px,1fr) minmax(110px,.8fr) 92px 112px minmax(200px,1.5fr) auto}
+#xyws-overlay .xyws-npcrow-fact{grid-template-columns:minmax(150px,.8fr) minmax(280px,2fr) auto}
+#xyws-overlay .xyws-npcrow-trait{grid-template-columns:minmax(140px,.8fr) minmax(100px,.6fr) minmax(100px,.6fr) minmax(240px,1.6fr) auto}
 #xyws-overlay .xyws-npcrow-item{grid-template-columns:minmax(135px,1fr) 70px minmax(105px,.8fr) minmax(220px,1.7fr) auto}
 #xyws-overlay .xyws-npcrow-injury{grid-template-columns:minmax(140px,.8fr) minmax(260px,2fr) auto}
 #xyws-overlay .xyws-npcrow-body{grid-template-columns:minmax(135px,.75fr) minmax(220px,1.4fr) minmax(220px,1.4fr) auto}
@@ -217,12 +219,12 @@
 #xyws-overlay .xyws-npcdel{align-self:stretch;border:1px solid rgba(240,161,177,.26);border-radius:8px;background:rgba(93,20,41,.10);color:#f0a1b1;padding:5px 8px;cursor:pointer;font-size:10px}
 #xyws-overlay .xyws-npcdel:hover{border-color:rgba(240,161,177,.5);background:rgba(93,20,41,.20)}
 @media(max-width:900px){
-  #xyws-overlay .xyws-npcrow,#xyws-overlay .xyws-npcrow-gear,#xyws-overlay .xyws-npcrow-item,#xyws-overlay .xyws-npcrow-body{grid-template-columns:1fr 1fr}
-  #xyws-overlay .xyws-npcrow textarea,#xyws-overlay .xyws-npcrow-gear textarea,#xyws-overlay .xyws-npcrow-item textarea,#xyws-overlay .xyws-npcrow-body textarea{grid-column:1/-1}
-  #xyws-overlay .xyws-npcrow .xyws-npcdel,#xyws-overlay .xyws-npcrow-gear .xyws-npcdel,#xyws-overlay .xyws-npcrow-item .xyws-npcdel,#xyws-overlay .xyws-npcrow-body .xyws-npcdel{grid-column:1/-1;justify-self:start;min-height:30px}
+  #xyws-overlay .xyws-npcrow,#xyws-overlay .xyws-npcrow-gear,#xyws-overlay .xyws-npcrow-item,#xyws-overlay .xyws-npcrow-body,#xyws-overlay .xyws-npcrow-fact,#xyws-overlay .xyws-npcrow-trait{grid-template-columns:1fr 1fr}
+  #xyws-overlay .xyws-npcrow textarea,#xyws-overlay .xyws-npcrow-gear textarea,#xyws-overlay .xyws-npcrow-item textarea,#xyws-overlay .xyws-npcrow-body textarea,#xyws-overlay .xyws-npcrow-fact textarea,#xyws-overlay .xyws-npcrow-trait textarea{grid-column:1/-1}
+  #xyws-overlay .xyws-npcrow .xyws-npcdel,#xyws-overlay .xyws-npcrow-gear .xyws-npcdel,#xyws-overlay .xyws-npcrow-item .xyws-npcdel,#xyws-overlay .xyws-npcrow-body .xyws-npcdel,#xyws-overlay .xyws-npcrow-fact .xyws-npcdel,#xyws-overlay .xyws-npcrow-trait .xyws-npcdel{grid-column:1/-1;justify-self:start;min-height:30px}
 }
 @media(max-width:560px){
-  #xyws-overlay .xyws-npcrow,#xyws-overlay .xyws-npcrow-gear,#xyws-overlay .xyws-npcrow-item,#xyws-overlay .xyws-npcrow-injury,#xyws-overlay .xyws-npcrow-body{grid-template-columns:1fr}
+  #xyws-overlay .xyws-npcrow,#xyws-overlay .xyws-npcrow-gear,#xyws-overlay .xyws-npcrow-item,#xyws-overlay .xyws-npcrow-injury,#xyws-overlay .xyws-npcrow-body,#xyws-overlay .xyws-npcrow-fact,#xyws-overlay .xyws-npcrow-trait{grid-template-columns:1fr}
   #xyws-overlay .xyws-npcrow textarea,#xyws-overlay .xyws-npcrow-gear textarea,#xyws-overlay .xyws-npcrow-item textarea,#xyws-overlay .xyws-npcrow-body textarea{grid-column:auto}
   #xyws-overlay .xyws-npcrow .xyws-npcdel,#xyws-overlay .xyws-npcrow-gear .xyws-npcdel,#xyws-overlay .xyws-npcrow-item .xyws-npcdel,#xyws-overlay .xyws-npcrow-body .xyws-npcdel{grid-column:auto;width:auto}
 }

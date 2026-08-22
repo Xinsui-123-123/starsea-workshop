@@ -34,7 +34,7 @@ import './src/workshop.js';
   }
 
 
-  var XYWS_EXT_VERSION = '2.0.0-dev.29';
+  var XYWS_EXT_VERSION = '2.0.0-dev.30';
   var settingsMounted = false;
 
   async function xywsRequestHeaders() {
