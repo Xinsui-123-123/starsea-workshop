@@ -423,7 +423,7 @@
       fab.className='xyws-fab';
       fab.setAttribute('aria-label','打开星海工坊');
       fab.setAttribute('title','星海工坊');
-      fab.innerHTML='<span class="xyws-fab-sys" aria-hidden="true"><span class="xyws-fab-scene"><span class="xyws-fab-path path-a"></span><span class="xyws-fab-path path-b"></span><span class="xyws-fab-path path-c"></span><span class="xyws-fab-orbit o1"><i class="xyws-fab-planet p-gold"></i></span><span class="xyws-fab-orbit o2"><i class="xyws-fab-planet p-pearl"></i></span><span class="xyws-fab-orbit o3"><i class="xyws-fab-planet p-ash"></i></span><span class="xyws-fab-sun"><span class="xyws-fab-glyph">✦</span></span></span></span><span class="xyws-fab-glass" aria-hidden="true"></span>';
+      fab.innerHTML='<span class="xyws-fab-sys" aria-hidden="true"><span class="xyws-fab-dust d1"></span><span class="xyws-fab-dust d2"></span><span class="xyws-fab-dust d3"></span><span class="xyws-fab-scene"><span class="xyws-fab-path path-a"></span><span class="xyws-fab-path path-b"></span><span class="xyws-fab-path path-c"></span><span class="xyws-fab-orbit o1"><span class="xyws-fab-pivot"><i class="xyws-fab-planet p-gold"></i></span></span><span class="xyws-fab-orbit o2"><span class="xyws-fab-pivot"><i class="xyws-fab-planet p-pearl"></i></span></span><span class="xyws-fab-orbit o3"><span class="xyws-fab-pivot"><i class="xyws-fab-planet p-ash"></i></span></span><span class="xyws-fab-sun"><span class="xyws-fab-corona"></span><span class="xyws-fab-core"></span></span></span></span><span class="xyws-fab-glass" aria-hidden="true"></span>';
       doc.body.appendChild(fab);
       function xywsFabSize(){
         return {w:fab.offsetWidth||58,h:fab.offsetHeight||58};
