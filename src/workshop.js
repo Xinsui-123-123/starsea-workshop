@@ -338,15 +338,31 @@
       fab.className='xyws-fab';
       fab.setAttribute('aria-label','打开星海工坊');
       fab.setAttribute('title','星海工坊');
-      fab.innerHTML='<span class="xyws-fab-ring" aria-hidden="true"></span><span class="xyws-fab-core" aria-hidden="true"><span class="xyws-fab-glyph">✦</span></span>';
+      fab.innerHTML='<span class="xyws-fab-sys" aria-hidden="true"><span class="xyws-fab-orbit o1"><i class="xyws-fab-planet p-gold"></i></span><span class="xyws-fab-orbit o2"><i class="xyws-fab-planet p-pearl"></i></span><span class="xyws-fab-orbit o3"><i class="xyws-fab-planet p-ash"></i></span><span class="xyws-fab-sun"><span class="xyws-fab-glyph">✦</span></span></span>';
       doc.body.appendChild(fab);
+      function xywsFabSize(){
+        return {w:fab.offsetWidth||58,h:fab.offsetHeight||58};
+      }
+      function xywsFabClampPos(right,bottom){
+        var s=xywsFabSize();
+        var maxR=Math.max(8,(win.innerWidth||360)-s.w-8);
+        var maxB=Math.max(8,(win.innerHeight||640)-s.h-8);
+        return {
+          right:Math.round(Math.min(maxR,Math.max(8,right))),
+          bottom:Math.round(Math.min(maxB,Math.max(8,bottom)))
+        };
+      }
+      function xywsFabSavePos(){
+        try{win.localStorage.setItem('xyws_fab_pos_v2',JSON.stringify({right:parseFloat(fab.style.right)||18,bottom:parseFloat(fab.style.bottom)||88}));}catch(_e){}
+      }
       try{
-        var raw=win.localStorage.getItem('xyws_fab_pos_v1');
+        var raw=win.localStorage.getItem('xyws_fab_pos_v2');
         if(raw){
           var p=JSON.parse(raw);
           if(p&&isFinite(Number(p.right))&&isFinite(Number(p.bottom))){
-            fab.style.right=Math.round(Number(p.right))+'px';
-            fab.style.bottom=Math.round(Number(p.bottom))+'px';
+            var c=xywsFabClampPos(Number(p.right),Number(p.bottom));
+            fab.style.right=c.right+'px';
+            fab.style.bottom=c.bottom+'px';
           }
         }
       }catch(e){}
@@ -362,10 +378,9 @@
         if(!drag.moved&&(dx*dx+dy*dy)<36)return;
         drag.moved=true;
         fab.classList.add('is-dragging');
-        var nr=Math.max(8,Math.min((win.innerWidth||360)-64, drag.r-dx));
-        var nb=Math.max(8,Math.min((win.innerHeight||640)-64, drag.b-dy));
-        fab.style.right=Math.round(nr)+'px';
-        fab.style.bottom=Math.round(nb)+'px';
+        var c=xywsFabClampPos(drag.r-dx,drag.b-dy);
+        fab.style.right=c.right+'px';
+        fab.style.bottom=c.bottom+'px';
       });
       function endDrag(e){
         if(!drag)return;
@@ -373,15 +388,17 @@
         try{fab.releasePointerCapture(e.pointerId);}catch(_e){}
         fab.classList.remove('is-dragging');
         if(moved){
-          var rect=fab.getBoundingClientRect();
-          var snapRight=(rect.left+rect.width/2)>(win.innerWidth||0)/2;
-          fab.style.right=snapRight?'18px':Math.max(8,Math.round((win.innerWidth||360)-rect.width-18))+'px';
-          try{win.localStorage.setItem('xyws_fab_pos_v1',JSON.stringify({right:parseFloat(fab.style.right)||18,bottom:parseFloat(fab.style.bottom)||88}));}catch(_e){}
+          xywsFabSavePos();
           fab.dataset.dragged='1';
           if(e.preventDefault)e.preventDefault();
         }
         drag=null;
       }
+      try{win.addEventListener('resize',function(){
+        var c=xywsFabClampPos(parseFloat(fab.style.right)||18,parseFloat(fab.style.bottom)||88);
+        fab.style.right=c.right+'px';
+        fab.style.bottom=c.bottom+'px';
+      });}catch(_e){}
       fab.addEventListener('pointerup',endDrag);
       fab.addEventListener('pointercancel',function(){drag=null;fab.classList.remove('is-dragging');});
       fab.addEventListener('click',function(e){
