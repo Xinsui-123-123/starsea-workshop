@@ -325,8 +325,74 @@
       xywsOldHtmlOverflow='';
       xywsOldBodyOverflow='';
     }
+    function xywsFabSetHidden(hidden){
+      var fab=doc.getElementById('xyws-fab');
+      if(fab) fab.setAttribute('data-hidden', hidden?'1':'0');
+    }
+    function ensureFab(){
+      var existing=doc.getElementById('xyws-fab');
+      if(existing) return existing;
+      var fab=doc.createElement('button');
+      fab.id='xyws-fab';
+      fab.type='button';
+      fab.className='xyws-fab';
+      fab.setAttribute('aria-label','打开星海工坊');
+      fab.setAttribute('title','星海工坊');
+      fab.innerHTML='<span class="xyws-fab-ring" aria-hidden="true"></span><span class="xyws-fab-core" aria-hidden="true"><span class="xyws-fab-glyph">✦</span></span>';
+      doc.body.appendChild(fab);
+      try{
+        var raw=win.localStorage.getItem('xyws_fab_pos_v1');
+        if(raw){
+          var p=JSON.parse(raw);
+          if(p&&isFinite(Number(p.right))&&isFinite(Number(p.bottom))){
+            fab.style.right=Math.round(Number(p.right))+'px';
+            fab.style.bottom=Math.round(Number(p.bottom))+'px';
+          }
+        }
+      }catch(e){}
+      var drag=null;
+      fab.addEventListener('pointerdown',function(e){
+        if(e.button!=null&&e.button!==0)return;
+        drag={x:e.clientX,y:e.clientY,moved:false,r:parseFloat(fab.style.right)||18,b:parseFloat(fab.style.bottom)||88};
+        try{fab.setPointerCapture(e.pointerId);}catch(_e){}
+      });
+      fab.addEventListener('pointermove',function(e){
+        if(!drag)return;
+        var dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+        if(!drag.moved&&(dx*dx+dy*dy)<36)return;
+        drag.moved=true;
+        fab.classList.add('is-dragging');
+        var nr=Math.max(8,Math.min((win.innerWidth||360)-64, drag.r-dx));
+        var nb=Math.max(8,Math.min((win.innerHeight||640)-64, drag.b-dy));
+        fab.style.right=Math.round(nr)+'px';
+        fab.style.bottom=Math.round(nb)+'px';
+      });
+      function endDrag(e){
+        if(!drag)return;
+        var moved=drag.moved;
+        try{fab.releasePointerCapture(e.pointerId);}catch(_e){}
+        fab.classList.remove('is-dragging');
+        if(moved){
+          var rect=fab.getBoundingClientRect();
+          var snapRight=(rect.left+rect.width/2)>(win.innerWidth||0)/2;
+          fab.style.right=snapRight?'18px':Math.max(8,Math.round((win.innerWidth||360)-rect.width-18))+'px';
+          try{win.localStorage.setItem('xyws_fab_pos_v1',JSON.stringify({right:parseFloat(fab.style.right)||18,bottom:parseFloat(fab.style.bottom)||88}));}catch(_e){}
+          fab.dataset.dragged='1';
+          if(e.preventDefault)e.preventDefault();
+        }
+        drag=null;
+      }
+      fab.addEventListener('pointerup',endDrag);
+      fab.addEventListener('pointercancel',function(){drag=null;fab.classList.remove('is-dragging');});
+      fab.addEventListener('click',function(e){
+        if(fab.dataset.dragged==='1'){delete fab.dataset.dragged;if(e.preventDefault)e.preventDefault();return;}
+        if(e){e.stopPropagation();if(e.preventDefault)e.preventDefault();}
+        open();
+      });
+      return fab;
+    }
     function open(){
-      xywsInitPlayPacerBridge();ensureOverlay();try{var sh=overlay.querySelector('.xyws-shell');if(xywsIsMobile()){sh.style.width='';sh.style.height='';}else xywsLoadSize(sh);}catch(_e){}overlay.classList.add('on');xywsLockScroll();
+      xywsInitPlayPacerBridge();ensureOverlay();ensureFab();xywsFabSetHidden(true);try{var sh=overlay.querySelector('.xyws-shell');if(xywsIsMobile()){sh.style.width='';sh.style.height='';}else xywsLoadSize(sh);}catch(_e){}overlay.classList.add('on');xywsLockScroll();
       var A=xywsAuthApi();
       if(!A||typeof A.isLoggedIn!=='function'||!A.isLoggedIn()){xywsEnterAuth();return;}
       if(A.refreshIfNeeded&&typeof A.refreshIfNeeded==='function'){
@@ -338,7 +404,7 @@
         xywsEnterHome();
       }
     }
-    function close(){xywsStopAutoSync();if(overlay)overlay.classList.remove('on');xywsUnlockScroll();}
+    function close(){xywsStopAutoSync();if(overlay)overlay.classList.remove('on');xywsUnlockScroll();xywsFabSetHidden(false);}
 
     function card(w, rank, opts){
       var actions='<button class="xyws-mini" data-open="'+esc(w.id)+'">查看</button>';
@@ -1651,6 +1717,7 @@
     setTimeout(function(){xywsInitPlayPacerBridge();},3500);
     var btn=doc.getElementById(buttonId);
     if(btn) btn.onclick=function(e){if(e){e.stopPropagation();if(e.preventDefault)e.preventDefault();}open();};
+    ensureFab();
     win.__XYWS_OPEN__=open;
 
     // 同标签页 OAuth 返回后，auth.js 会在页面启动阶段完成 bridge 解密与 CloudBase signin。

@@ -330,3 +330,57 @@
 #xyws-overlay .xyws-ai-sourcebox>summary:before{content:'▸';margin-right:5px;color:var(--ws-faint);transition:.15s}
 #xyws-overlay .xyws-ai-sourcebox[open]>summary:before{transform:rotate(90deg)}
 #xyws-overlay .xyws-ai-sourcebox .xyws-ai-raw{margin:0;padding:0 11px 11px}
+
+/* 宿主页悬浮入口：无文字，仅星纹符号 + 呼吸光 */
+#xyws-fab{
+  position:fixed;z-index:2147483000;right:18px;bottom:88px;
+  width:56px;height:56px;padding:0;border:0;border-radius:50%;
+  background:transparent;cursor:grab;appearance:none;-webkit-appearance:none;
+  box-shadow:0 10px 28px rgba(8,6,24,.45);
+  touch-action:none;user-select:none;
+  animation:xyws-fab-float 3.6s ease-in-out infinite;
+}
+#xyws-fab[data-hidden="1"],body:has(#xyws-overlay.on) #xyws-fab{
+  animation:none;opacity:0;pointer-events:none;transform:scale(.86);
+  transition:opacity .22s ease,transform .22s ease;
+}
+#xyws-fab.is-dragging{cursor:grabbing}
+#xyws-fab-ring,
+#xyws-fab .xyws-fab-ring{
+  position:absolute;inset:-7px;border-radius:50%;pointer-events:none;
+  border:1px solid rgba(241,229,191,.35);
+  box-shadow:0 0 0 6px rgba(168,154,235,.08);
+  animation:xyws-fab-pulse 2.8s ease-in-out infinite;
+}
+#xyws-fab .xyws-fab-core{
+  position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;
+  border:1px solid rgba(241,229,191,.55);
+  background:
+    radial-gradient(18px 14px at 32% 28%,rgba(255,255,255,.42),transparent 70%),
+    linear-gradient(145deg,#ede4c4 0%,#c9b7f4 42%,#8d7ad6 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 0 18px rgba(201,183,244,.45);
+}
+#xyws-fab .xyws-fab-glyph{
+  font-size:22px;line-height:1;color:#1a1428;
+  text-shadow:0 0 10px rgba(255,255,255,.55);
+  animation:xyws-fab-twinkle 2.4s ease-in-out infinite;
+}
+#xyws-fab:hover,#xyws-fab.is-dragging{animation:none;transform:translateY(-3px) scale(1.05)}
+#xyws-fab:active{animation:none;transform:scale(.96)}
+#xyws-fab:hover .xyws-fab-core{filter:brightness(1.08)}
+#xyws-fab:active .xyws-fab-core{filter:none}
+@keyframes xyws-fab-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-5px)}
+}
+@keyframes xyws-fab-pulse{
+  0%,100%{opacity:.55;transform:scale(.92)}
+  50%{opacity:1;transform:scale(1)}
+}
+@keyframes xyws-fab-twinkle{
+  0%,100%{opacity:.88;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.14)}
+}
+@media (prefers-reduced-motion:reduce){
+  #xyws-fab,#xyws-fab .xyws-fab-ring,#xyws-fab .xyws-fab-glyph{animation:none}
+}
