@@ -15,12 +15,12 @@
 (function () {
   'use strict';
   var CONFIG = {
-    WORKS_API_URL: 'https://starsea-workshop-d1e275q7beaef2b-1471854257.ap-shanghai.app.tcloudbase.com/xyws/works',
-    AUTH_START_URL: 'https://1471854257-eicvlrgku5.ap-hongkong.tencentscf.com/oauth/start',
-    CLOUDBASE_AUTH_BASE: 'https://starsea-workshop-d1e275q7beaef2b.api.tcloudbasegateway.com/auth/v1',
-    AUTH_ME_API_URL: 'https://starsea-workshop-d1e275q7beaef2b-1471854257.ap-shanghai.app.tcloudbase.com/xyws/auth/me',
-    WORKS_PUBLISH_API_URL: 'https://starsea-workshop-d1e275q7beaef2b-1471854257.ap-shanghai.app.tcloudbase.com/xyws/works/publish',
-    WORKS_MANAGE_API_URL: 'https://starsea-workshop-d1e275q7beaef2b-1471854257.ap-shanghai.app.tcloudbase.com/xyws/works/manage'
+ WORKS_API_URL: 'https://208.75.133.5.sslip.io/xyws/works',
+AUTH_START_URL: 'https://208.75.133.5.sslip.io/oauth/start',
+CLOUDBASE_AUTH_BASE: 'https://208.75.133.5.sslip.io/auth/v1',
+AUTH_ME_API_URL: 'https://208.75.133.5.sslip.io/xyws/auth/me',
+WORKS_PUBLISH_API_URL: 'https://208.75.133.5.sslip.io/xyws/works/publish',
+WORKS_MANAGE_API_URL: 'https://208.75.133.5.sslip.io/xyws/works/manage'
   };
   try { if (typeof window !== 'undefined') window.__XYWS_CLOUD_CONFIG__ = CONFIG; } catch (e) {}
   try { if (typeof globalThis !== 'undefined') globalThis.__XYWS_CLOUD_CONFIG__ = CONFIG; } catch (e) {}
