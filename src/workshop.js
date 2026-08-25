@@ -525,11 +525,11 @@
     function close(){xywsStopAutoSync();if(overlay)overlay.classList.remove('on');xywsUnlockScroll();xywsSyncFabVisibility();}
 
     function card(w, rank, opts){
-      var actions='<button class="xyws-mini" data-open="'+esc(w.id)+'">查看</button>';
+      var actions='';
       if(opts&&opts.canDelete&&w&&w.xywsCloud&&w.xywsOriginId)actions+='<button class="xyws-mini danger" data-delete-work="'+esc(w.xywsOriginId)+'" data-delete-title="'+esc(w.title||'')+'">删除</button>';
       if(opts&&opts.canEdit)actions+='<button class="xyws-mini" data-edit-work="'+esc(w.id)+'">编辑</button>';
       if(opts&&opts.canUpload)actions+='<button class="xyws-mini" data-upload-work="'+esc(w.id)+'">上传云端</button>';
-      return '<article class="xyws-card" data-id="'+esc(w.id)+'"><div class="xyws-cardtop"><div class="xyws-orb">'+esc(w.icon||ICON[w.type]||'✦')+'</div><div class="xyws-cmain"><div class="xyws-title">'+(rank?'<span class="xyws-rank">'+rank+'</span>':'')+esc(w.title)+'</div><div class="xyws-desc">'+esc(xywsEnsureSummary(w))+'</div><div class="xyws-tags">'+(w.tags||[]).map(function(t){return '<span class="xyws-tag">'+esc(t)+'</span>';}).join('')+'</div></div></div><div class="xyws-foot"><div class="xyws-stats"><span>♡ '+fmt(w.likes)+'</span><span>下载 '+fmt(w.uses)+'</span></div><div class="xyws-card-actions">'+actions+'</div></div></article>';
+      return '<article class="xyws-card" data-id="'+esc(w.id)+'" data-open="'+esc(w.id)+'" role="button" tabindex="0"><div class="xyws-cardtop"><div class="xyws-orb">'+esc(w.icon||ICON[w.type]||'✦')+'</div><div class="xyws-cmain"><div class="xyws-title">'+(rank?'<span class="xyws-rank">'+rank+'</span>':'')+esc(w.title)+'</div><div class="xyws-desc">'+esc(xywsEnsureSummary(w))+'</div><div class="xyws-tags">'+(w.tags||[]).map(function(t){return '<span class="xyws-tag">'+esc(t)+'</span>';}).join('')+'</div></div></div><div class="xyws-foot"><div class="xyws-stats"><span>♡ '+fmt(w.likes)+'</span><span>下载 '+fmt(w.uses)+'</span></div><div class="xyws-card-actions">'+actions+'</div></div></article>';
     }
     function byId(id){
       for(var i=0;i<WORKS.length;i++)if(WORKS[i].id===id)return WORKS[i];
