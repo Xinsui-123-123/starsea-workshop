@@ -327,7 +327,92 @@
     }
     function xywsFabSetHidden(hidden){
       var fab=doc.getElementById('xyws-fab');
-      if(fab) fab.setAttribute('data-hidden', hidden?'1':'0');
+      if(!fab) return;
+      fab.setAttribute('data-hidden', hidden?'1':'0');
+      fab.setAttribute('aria-hidden', hidden?'true':'false');
+    }
+    function xywsCurrentCharacter(){
+      var ctx=xywsGetCtx();
+      if(!ctx) return null;
+      var cid=ctx.characterId;
+      if(cid==null||cid===''||cid===false||cid==='undefined') return null;
+      var n=Number(cid);
+      if(!isFinite(n)||n<0) return null;
+      try{return (ctx.characters||[])[n]||null;}catch(e){return null;}
+    }
+    function xywsCharHaystack(ch){
+      if(!ch) return '';
+      var bits=[],d=ch.data;
+      function push(v){
+        if(v==null) return;
+        if(typeof v==='string'){bits.push(v);return;}
+        if(typeof v==='number'||typeof v==='boolean'){bits.push(String(v));return;}
+        try{bits.push(JSON.stringify(v));}catch(e){}
+      }
+      push(ch.name);push(ch.avatar);push(ch.creatorcomment);
+      if(d){
+        push(d.name);push(d.creator_notes);push(d.creatorcomment);push(d.extensions);
+        if(d.character_book) push(d.character_book.name);
+      }
+      return bits.join('\n');
+    }
+    function xywsIsCurrentWorkshopCard(){
+      try{if(doc.getElementById('xysb-workshop')) return true;}catch(e){}
+      var ch=xywsCurrentCharacter();
+      if(!ch) return false;
+      var hay='';
+      try{hay=xywsCharHaystack(ch);}catch(e){}
+      if(/xysb-workshop|__XYWS_OPEN__|51ca9d2d-6a41-47ce-ade0-1347cd40393c|星海工坊V2_扩展桥接|星盟契约/.test(hay)) return true;
+      try{
+        var n=String(ch.name||(ch.data&&ch.data.name)||'');
+        if(n.indexOf('星盟契约')>=0||n.indexOf('魔法少女MVU测试')>=0) return true;
+      }catch(e2){}
+      return false;
+    }
+    function xywsSyncFabVisibility(){
+      var on=xywsIsCurrentWorkshopCard();
+      if(on){
+        ensureFab();
+        if(!(overlay&&overlay.classList.contains('on'))) xywsFabSetHidden(false);
+        return;
+      }
+      xywsFabSetHidden(true);
+      if(overlay&&overlay.classList.contains('on')){
+        xywsStopAutoSync();
+        overlay.classList.remove('on');
+        xywsUnlockScroll();
+      }
+    }
+    function xywsBindFabToHostCard(){
+      var bound=false;
+      function attach(){
+        if(bound) return true;
+        var ctx=xywsGetCtx();
+        if(!ctx||!ctx.eventSource) return false;
+        var types=ctx.event_types||{};
+        var t=null;
+        function kick(){
+          try{if(t)win.clearTimeout(t);}catch(e){}
+          t=win.setTimeout(xywsSyncFabVisibility, 280);
+        }
+        ['CHAT_CHANGED','CHAT_CREATED','CHAT_DELETED','CHARACTER_PAGE_LOADED','CHARACTER_DELETED','GROUP_CHAT_CREATED'].forEach(function(k){
+          var ev=types[k];
+          if(!ev) return;
+          try{ctx.eventSource.on(ev, kick);}catch(e){}
+        });
+        bound=true;
+        kick();
+        return true;
+      }
+      if(!attach()){
+        var n=0,iv=null;
+        try{iv=win.setInterval(function(){
+          n++;
+          if(attach()||n>20) try{win.clearInterval(iv);}catch(e){}
+        },400);}catch(e){}
+      }
+      xywsSyncFabVisibility();
+      try{win.setTimeout(xywsSyncFabVisibility,1200);}catch(e){}
     }
     function ensureFab(){
       var existing=doc.getElementById('xyws-fab');
@@ -338,7 +423,7 @@
       fab.className='xyws-fab';
       fab.setAttribute('aria-label','打开星海工坊');
       fab.setAttribute('title','星海工坊');
-      fab.innerHTML='<span class="xyws-fab-sys" aria-hidden="true"><span class="xyws-fab-orbit o1"><i class="xyws-fab-planet p-gold"></i></span><span class="xyws-fab-orbit o2"><i class="xyws-fab-planet p-pearl"></i></span><span class="xyws-fab-orbit o3"><i class="xyws-fab-planet p-ash"></i></span><span class="xyws-fab-sun"><span class="xyws-fab-glyph">✦</span></span></span>';
+      fab.innerHTML='<span class="xyws-fab-sys" aria-hidden="true"><span class="xyws-fab-scene"><span class="xyws-fab-path path-a"></span><span class="xyws-fab-path path-b"></span><span class="xyws-fab-path path-c"></span><span class="xyws-fab-orbit o1"><i class="xyws-fab-planet p-gold"></i></span><span class="xyws-fab-orbit o2"><i class="xyws-fab-planet p-pearl"></i></span><span class="xyws-fab-orbit o3"><i class="xyws-fab-planet p-ash"></i></span><span class="xyws-fab-sun"><span class="xyws-fab-glyph">✦</span></span></span></span><span class="xyws-fab-glass" aria-hidden="true"></span>';
       doc.body.appendChild(fab);
       function xywsFabSize(){
         return {w:fab.offsetWidth||58,h:fab.offsetHeight||58};
@@ -367,17 +452,31 @@
         }
       }catch(e){}
       var drag=null;
+      function xywsFabClearTilt(){
+        fab.style.setProperty('--xyws-tilt-x','0deg');
+        fab.style.setProperty('--xyws-tilt-y','0deg');
+      }
+      function xywsFabApplyTilt(e){
+        if(fab.classList.contains('is-dragging')){xywsFabClearTilt();return;}
+        var r=fab.getBoundingClientRect();
+        if(!r.width||!r.height)return;
+        var nx=(e.clientX-r.left)/r.width-0.5;
+        var ny=(e.clientY-r.top)/r.height-0.5;
+        fab.style.setProperty('--xyws-tilt-y',(nx*10).toFixed(2)+'deg');
+        fab.style.setProperty('--xyws-tilt-x',(-ny*8).toFixed(2)+'deg');
+      }
       fab.addEventListener('pointerdown',function(e){
         if(e.button!=null&&e.button!==0)return;
         drag={x:e.clientX,y:e.clientY,moved:false,r:parseFloat(fab.style.right)||18,b:parseFloat(fab.style.bottom)||88};
         try{fab.setPointerCapture(e.pointerId);}catch(_e){}
       });
       fab.addEventListener('pointermove',function(e){
-        if(!drag)return;
+        if(!drag){xywsFabApplyTilt(e);return;}
         var dx=e.clientX-drag.x, dy=e.clientY-drag.y;
-        if(!drag.moved&&(dx*dx+dy*dy)<36)return;
+        if(!drag.moved&&(dx*dx+dy*dy)<36){xywsFabApplyTilt(e);return;}
         drag.moved=true;
         fab.classList.add('is-dragging');
+        xywsFabClearTilt();
         var c=xywsFabClampPos(drag.r-dx,drag.b-dy);
         fab.style.right=c.right+'px';
         fab.style.bottom=c.bottom+'px';
@@ -391,6 +490,7 @@
           xywsFabSavePos();
           fab.dataset.dragged='1';
           if(e.preventDefault)e.preventDefault();
+          xywsFabClearTilt();
         }
         drag=null;
       }
@@ -400,7 +500,8 @@
         fab.style.bottom=c.bottom+'px';
       });}catch(_e){}
       fab.addEventListener('pointerup',endDrag);
-      fab.addEventListener('pointercancel',function(){drag=null;fab.classList.remove('is-dragging');});
+      fab.addEventListener('pointercancel',function(){drag=null;fab.classList.remove('is-dragging');xywsFabClearTilt();});
+      fab.addEventListener('pointerleave',function(){if(!drag)xywsFabClearTilt();});
       fab.addEventListener('click',function(e){
         if(fab.dataset.dragged==='1'){delete fab.dataset.dragged;if(e.preventDefault)e.preventDefault();return;}
         if(e){e.stopPropagation();if(e.preventDefault)e.preventDefault();}
@@ -421,7 +522,7 @@
         xywsEnterHome();
       }
     }
-    function close(){xywsStopAutoSync();if(overlay)overlay.classList.remove('on');xywsUnlockScroll();xywsFabSetHidden(false);}
+    function close(){xywsStopAutoSync();if(overlay)overlay.classList.remove('on');xywsUnlockScroll();xywsSyncFabVisibility();}
 
     function card(w, rank, opts){
       var actions='<button class="xyws-mini" data-open="'+esc(w.id)+'">查看</button>';
@@ -1734,7 +1835,7 @@
     setTimeout(function(){xywsInitPlayPacerBridge();},3500);
     var btn=doc.getElementById(buttonId);
     if(btn) btn.onclick=function(e){if(e){e.stopPropagation();if(e.preventDefault)e.preventDefault();}open();};
-    ensureFab();
+    xywsBindFabToHostCard();
     win.__XYWS_OPEN__=open;
 
     // 同标签页 OAuth 返回后，auth.js 会在页面启动阶段完成 bridge 解密与 CloudBase signin。
